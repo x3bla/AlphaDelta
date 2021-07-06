@@ -3,8 +3,7 @@ from discord.ext import commands
 import random
 
 # extra shit
-intents = discord.Intents(messages = True, guilds = True, reactions = True, members = True, presences = True)
-client = commands.Bot(command_prefix = '~', intents = intents)
+client = commands.Bot(command_prefix = '~')
 
 @client.event
 async def on_ready():
@@ -58,5 +57,5 @@ async def _8ball(ctx, *, question):
                  'I thought too hard and died.']
 
     await ctx.send(f"Question: {question}\nAnswer: {random.choice(responses)}")
-
-client.run('ODIzNDMxMTA4ODUwODc2NDY2.YFgt-g.QCRQDe7mLjoaOvJMn38kTcNu-jE')
+Token = open(r"Token.txt")
+client.run(Token.read())
