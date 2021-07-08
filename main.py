@@ -1,61 +1,110 @@
+import os
 import discord
-from discord.ext import commands
-import random
+from discord.ext import commands, tasks
+from itertools import cycle
 
-# extra shit
-client = commands.Bot(command_prefix = '~')
+# giving points
+def point():
+    cache = int(points)
+    cache += 1
+    cache = str(cache)
+    text = open("HeadPats.txt", "w")
+    text.write(cache)
+    text.close()
+    cache = int(cache)
 
-@client.event
+# declaring admins
+def admin():
+    admin_list = open("AdminList.txt")
+    operators = admin_list.read()
+    admin_list.close()
+
+# locking certain commands
+def authCheck(user):
+    op_name, op_discriminator = operators.split('#') # note: might wanna make this take more operators
+    if (user.name, user.discriminator) == (op_name, op_discriminator):
+        print(f"{user.name}#{user.discriminator} has performed an admin action")
+        return True
+    else:
+        return False
+
+
+# variables
+headpats = 0
+operators = ""
+
+# loading head pats
+txt = open(r"HeadPats.txt")
+points = int(txt.read())
+txt.close()
+status = cycle(["8ball", "admin commands", "deciding life choices"])   # different statuses
+
+# setting prefix and making commands case insensitive
+bot = commands.Bot(command_prefix='~', case_insensitive=True)
+
+
+# status changes
+@tasks.loop(hours=1)
+async def change_status():
+    await bot.change_presence(activity=discord.Game(next(status)))
+
+
+# basic commands
+@bot.event
 async def on_ready():
     print("Bot is ready.")
 
-@client.event
+
+@bot.event
 async def on_member_join(member):
     print(f'{member} has joined a server.')
 
-@client.event
+
+@bot.event
 async def on_member_remove(member):
     print(f'{member} has left a server')
 
-@client.command()
+
+@bot.command()
 async def alpha(ctx):
     await ctx.send("Delta!")
 
-@client.command()
+
+@bot.command()
 async def ping(ctx):
-    await ctx.send(f"Pong! \n{client.latency * 1000}ms")
+    await ctx.send(f"Pong! \n{bot.latency * 1000}ms")
 
-@client.command(aliases=["8ball", "kms"])
-async def _8ball(ctx, *, question):
-    responses = ["It is certain.",
-                 "It is decidedly so.",
-                 "Without a doubt.",
-                 "Yes - definitely.",
-                 "You may rely on it.",
-                 "As I see it, yes.",
-                 "Most likely.",
-                 "Outlook good.",
-                 "Yes.",
-                 "Signs point to yes.",
-                 "Reply hazy, try again.",
-                 "Ask again later.",
-                 "Better not tell you now.",
-                 "Cannot predict now.",
-                 "Concentrate and ask again.",
-                 "Don't count on it.",
-                 "My reply is no.",
-                 "My sources say no.",
-                 "Outlook not so good.",
-                 "Very doubtful.",
-                 'For sure',
-                 'Chances are low',
-                 'Wouldn\'t count on it.',
-                 'Nope',
-                 'Try again',
-                 'Think hard and try again',
-                 'Go away before I eat your cat',
-                 'I thought too hard and died.']
 
-    await ctx.send(f"Question: {question}\nAnswer: {random.choice(responses)}")
+@bot.command()
+async def goodBot(ctx):
+    username = ctx.author.mention
+    await ctx.send(f"Thanks {username} ヽ(=^･ω･^=)丿")
+    point()
+
+
+@bot.command()
+async def load(ctx, extension):
+    bot.load_extension(f"cogs.{extension}")
+
+
+# loading/unloading listeners
+@bot.command()
+async def unload(ctx, extension):
+    bot.unload_extension(f"cogs.{extension}")
+    print(f"{extension} has been unloaded")
+
+
+@bot.command()
+async def reload(ctx, extension):
+    bot.unload_extension(f"cogs.{extension}")
+    bot.load_extension(f"cogs.{extension}")
+    print(f"{extension} has been reloaded")
+
+for filename in os.listdir("./cogs"):
+    if filename.endswith(".py"):
+        bot.load_extension(f"cogs.{filename[:-3]}")
+
+# main loop/run
+admin()
 Token = open(r"Token.txt")
-client.run(Token.read())
+bot.run(Token.read())
