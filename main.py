@@ -12,7 +12,7 @@ def operators(ctx):
     elif ctx.author.id == 807215269403426848:
         return True
     else:
-        print(f"{ctx.author} attempted to perform an admin action")
+        print(f"{ctx.author} attempted to perform an admin action\n")
         return False
 
 def saveToFIle():
@@ -88,14 +88,14 @@ async def goodBot(ctx):
 @commands.check(operators)
 async def load(ctx, extension):
     bot.load_extension(f"cogs.{extension}")
-    print(f"{ctx.author} has performed an admin action")
+    print(f"{ctx.author} has performed an admin action\n")
 
 @bot.command()
 @commands.check(operators)
 async def unload(ctx, extension):
     bot.unload_extension(f"cogs.{extension}")
     print(f"{ctx.author} has performed an admin action")
-    print(f"{extension} has been unloaded")
+    print(f"{extension} has been unloaded\n")
 
 @bot.command()
 @commands.check(operators)
@@ -103,7 +103,7 @@ async def reload(ctx, extension):
     bot.unload_extension(f"cogs.{extension}")
     bot.load_extension(f"cogs.{extension}")
     print(f"{ctx.author} has performed an admin action")
-    print(f"{extension} has been reloaded")
+    print(f"{extension} has been reloaded\n")
 
 for filename in os.listdir("./cogs"):
     if filename.endswith(".py"):

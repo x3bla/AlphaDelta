@@ -1,14 +1,6 @@
 import discord
 from discord.ext import commands
 
-def operators(ctx):
-    if ctx.author.id == 262505750922919937:
-        return True
-    elif ctx.author.id == 807215269403426848:
-        return True
-    else:
-        return False
-
 
 class Admin(commands.Cog):
 
@@ -20,18 +12,24 @@ class Admin(commands.Cog):
         print("Admin is loaded")
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True or operators)
+    @commands.has_any_role("Lord and savior", "Server Admin")
     async def purge(self, ctx, amount=5):
         await ctx.channel.purge(limit=amount)
 
     @commands.command()
-    @commands.has_permissions(kick_members=True or operators)
-    async def kick(self, ctx, member: discord.member, *, reason=None):
+    @commands.has_any_role("Lord and savior", "Server Admin")
+    async def kick(self, ctx, member: discord.Member, *, reason=None):
         await member.kick(reason=reason)
-        await ctx.send(f"{member}was yeeted.")
+        await ctx.send(f"{member} was yeeted.")
 
     @commands.command()
-    @commands.has_permissions(ban_members=True)
+    @commands.has_any_role("Lord and savior", "Server Admin")
+    async def ban(self, ctx, member: discord.Member, *, reason=None):
+        await member.ban(reason=reason)
+        await ctx.send(f"{member} was yeeted^2.")
+
+    @commands.command()
+    @commands.has_any_role("Lord and savior", "Server Admin")
     async def unban(self, ctx, *, member):
         banned_users = await ctx.guild.bans()
         member_name, member_discriminator = member.split('#')
