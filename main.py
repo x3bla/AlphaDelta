@@ -2,40 +2,48 @@ import os
 import discord
 from discord.ext import commands, tasks
 from itertools import cycle
+import json
 
 # variables
 headpatCache = 0
+operator = []
+token = ""
+
+def unloadJSON():
+    global operator
+    global headpatCache
+    global token
+    with open("data.json", 'r') as f:
+        data = json.load(f)
+        headpatCache = data["headpats"]
+        token = data["token"]
+        operator = data["opID"]
 
 def operators(ctx):
-    if ctx.author.id == 262505750922919937:
-        return True
-    elif ctx.author.id == 807215269403426848:
+    global operator
+    if ctx.author.id in operator:
         return True
     else:
         print(f"{ctx.author} attempted to perform an admin action\n")
         return False
 
-def saveToFIle():
-    text = open("HeadPats.txt", "w")
-    text.write(str(headpatCache))
-    text.close()
+def saveHeadpats():
+    with open("data.json", 'r') as f:
+        data = json.load(f)
+        data["headpats"] = headpatCache
 
-def readFromFile():
-    global headpatCache
-    txt = open(r"HeadPats.txt")
-    points = int(txt.read())
-    txt.close()
-    headpatCache = int(points)
+    with open("data.json", 'w') as f:
+        json.dump(data, f, indent = 2)
 
 
 # giving points
 def point():
     global headpatCache
     headpatCache += 1
-    saveToFIle()
+    saveHeadpats()
 
 
-# loading head pats
+# cycling through statuses
 status = cycle(["8ball", "admin commands", "deciding life choices"])  # different statuses
 
 
@@ -44,7 +52,7 @@ bot = commands.Bot(command_prefix='~', case_insensitive=True)
 
 
 # status changes
-@tasks.loop(hours=1)
+@tasks.loop(minutes=10)
 async def change_status():
     await bot.change_presence(activity=discord.Game(next(status)))
 
@@ -111,6 +119,5 @@ for filename in os.listdir("./cogs"):
 
 
 # main loop/run
-readFromFile()
-Token = open(r"Token.txt")
-bot.run(Token.read())
+unloadJSON()
+bot.run(token)
