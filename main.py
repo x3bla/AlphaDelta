@@ -3,6 +3,8 @@ import discord
 from discord.ext import commands, tasks
 from itertools import cycle
 import json
+import traceback
+import sys
 
 # variables
 headpatCache = 0
@@ -24,7 +26,7 @@ def operators(ctx):
     if ctx.author.id in operator:
         return True
     else:
-        print(f"{ctx.author} attempted to perform an admin action\n")
+        print(f"{ctx.author} attempted to perform a load action\n")
         return False
 
 def saveHeadpats():
@@ -71,6 +73,14 @@ async def on_member_join(member):
 async def on_member_remove(member):
     print(f'{member} has left a server')
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.errors.CheckFailure):
+        print(f"{ctx.author} tried to use a command without proper perms")
+        pass
+    else:
+        print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 #commands
 @bot.command()

@@ -1,15 +1,26 @@
 import json
-
 from discord.ext import commands
 import asyncio
 
+# variables
+opID = []
+
 def unloadJSON():
+    global opID
     with open("data.json", "r") as f:
         data = json.load(f)
+        opID = data["opID"]
 
-
-def operators(ctx):
-    return ctx.author.id == 807215269403426848
+def hasPerms(ctx):
+    global opID
+    if ctx.author.id in opID:
+        return True
+    else:
+        try:
+            return ctx.message.channel.permissions_for(ctx.author).ban_members
+        except:
+            print("failed")
+            return False
 
 
 class Admin(commands.Cog):
@@ -29,27 +40,28 @@ class Admin(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        unloadJSON()
         print("Admin is loaded")
 
     @commands.command()
-    @commands.has_any_role("Lord and savior", "Server Admin")
+    @commands.check(hasPerms)
     async def purge(self, ctx, amount=5):
         await ctx.channel.purge(limit=amount)
 
     @commands.command()
-    @commands.has_any_role("Lord and savior", "Server Admin")
+    @commands.check(hasPerms)
     async def kick(self, ctx, member: commands.MemberConverter, *, reason=None):
         await ctx.guild.kick(reason=reason)
         await ctx.send(f"{member} was yeeted.")
 
     @commands.command()
-    @commands.has_any_role("Lord and savior", "Server Admin")
+    @commands.check(hasPerms)
     async def ban(self, ctx, member: commands.MemberConverter, *, reason=None):
         await ctx.guild.ban(reason=reason)
         await ctx.send(f"{member} was yeeted^2.")
 
     @commands.command()
-    @commands.has_any_role("Lord and savior", "Server Admin")
+    @commands.check(hasPerms)
     async def tempban(self, ctx, member: commands.MemberConverter, duration: DurationConverter, *, reason=None):
 
         multiplier = {'s': 1, 'm': 60, 'h': 3600}
@@ -60,8 +72,8 @@ class Admin(commands.Cog):
         await asyncio.sleep(amount * multiplier[unit])
         await ctx.guild.unban(member)
 
-    @commands.command()
-    @commands.has_any_role("Lord and savior", "Server Admin")
+    @commands.command(aliases=["pardon"])
+    @commands.check(hasPerms)
     async def unban(self, ctx, *, member):
         banned_users = await ctx.guild.bans()
         member_name, member_discriminator = member.split('#')
