@@ -1,11 +1,12 @@
 from discord.ext import commands
 import random
 
-def mathBreakUp(expression):
-    expression.replace("x", "*")
-    expression.replace("X", "*")
-    print(eval(expression))
-    return eval(expression)
+# not safe
+# def mathBreakUp(expression):
+#     expression.replace("x", "*")
+#     expression.replace("X", "*")
+#     print(eval(expression))
+#     return eval(expression)
 
 
 class Expand1(commands.Cog):
