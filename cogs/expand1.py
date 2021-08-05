@@ -53,9 +53,9 @@ class Expand1(commands.Cog):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please ask a question")
 
-    @commands.command(aliases=["cal"])      # 8x5/3+2-9
-    async def calculate(self, ctx, *, expression):
-        await ctx.send(f"Question: {expression}\nAnswer: {mathBreakUp(expression)}")
+    # @commands.command(aliases=["cal"])      # 8x5/3+2-9
+    # async def calculate(self, ctx, *, expression):
+    #     await ctx.send(f"Question: {expression}\nAnswer: {mathBreakUp(expression)}")
 
 
 def setup(bot):
