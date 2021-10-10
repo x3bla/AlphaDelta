@@ -30,3 +30,8 @@ PyNaCl:
 type this in a administrator command line or the terminal of pycharm:
 
 `python3 -m pip install -U discord.py[voice]`
+
+Youtube_dl:
+for pycharm, this is the package to install
+
+![2021-10-10 20_01_50-Window](https://user-images.githubusercontent.com/75881405/136695159-12cb539d-9378-4cea-aada-2333a663ec11.png)
