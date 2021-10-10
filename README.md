@@ -5,7 +5,7 @@ A bot that does whatever their owner wants. Badly
 
 For the bot to work 100%, you need to FFmpeg and add the bin folder to path, pip install PyNaCl and discord voice
 
-## ffmpeg installation Winows
+## ffmpeg Installation Winows
 - [ffmpeg link (Windows build by BtbN)](https://ffmpeg.org/download.html#build-windows)
 
 - extract and rename to ffmpeg!
