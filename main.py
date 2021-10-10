@@ -46,11 +46,11 @@ def point():
 
 
 # cycling through statuses
-status = cycle(["8ball", "admin commands", "deciding life choices"])  # different statuses
+status = cycle(["8ball", "Jamming to youtube", "deciding life choices"])  # different statuses
 
 
 # setting prefix and making commands case insensitive
-bot = commands.Bot(command_prefix='~', case_insensitive=True)
+bot = commands.Bot(command_prefix='!', case_insensitive=True)
 
 
 # status changes
@@ -62,7 +62,7 @@ async def change_status():
 # basic commands
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=discord.Game(next(status)))
+    change_status.start()
     print("Bot is ready.")
 
 @bot.event
