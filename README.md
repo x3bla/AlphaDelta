@@ -33,4 +33,4 @@ type this in a administrator command line or the terminal of pycharm:
 
 Youtube_dl:
 
-`pip install youtube_dl`
+`pip install youtube-dl`
