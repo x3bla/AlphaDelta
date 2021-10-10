@@ -34,3 +34,18 @@ type this in a administrator command line or the terminal of pycharm:
 Youtube_dl:
 
 `pip install youtube-dl`
+
+## Discord Bot Setup
+
+Head to https://discord.com/developers/applications and create a new application
+
+Head to the Bot tab and press Add new bot. The picture below is the required perms
+
+![2021-10-10 20_24_12-Window](https://user-images.githubusercontent.com/75881405/136695665-bd2d8ced-a7af-48c1-8726-77d1e3142cae.png)
+
+## Invite Discord Bot
+
+create a link here, and paste it into your browser to invite the bot
+
+![2021-10-10 20_22_59-Window](https://user-images.githubusercontent.com/75881405/136695727-8914b8df-868b-4261-8476-8063ee3fc15e.png)
+
