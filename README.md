@@ -3,7 +3,7 @@ A bot that does whatever their owner wants. Badly
 
 # Installation
 
-For the bot to work 100%, you need to FFmpeg and add the bin folder to path, pip install PyNaCl and discord voice
+For the bot to work 100%, you need to FFmpeg and add the bin folder to path, Youtube_dl and PyNaCl with discord Voice
 
 ## ffmpeg Installation Winows
 - [ffmpeg link (Windows build by BtbN)](https://ffmpeg.org/download.html#build-windows)
@@ -32,6 +32,5 @@ type this in a administrator command line or the terminal of pycharm:
 `python3 -m pip install -U discord.py[voice]`
 
 Youtube_dl:
-for pycharm, this is the package to install
 
-![2021-10-10 20_01_50-Window](https://user-images.githubusercontent.com/75881405/136695159-12cb539d-9378-4cea-aada-2333a663ec11.png)
+`pip install youtube_dl`
