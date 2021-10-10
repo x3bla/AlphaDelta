@@ -1,4 +1,6 @@
 import json
+
+import discord
 from discord.ext import commands
 import asyncio
 
@@ -50,24 +52,24 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.check(hasPerms)
-    async def kick(self, ctx, member: commands.MemberConverter, *, reason=None):
-        await ctx.guild.kick(reason=reason)
+    async def kick(self, ctx, member: discord.Member, *, reason=None):
+        await member.kick(reason=reason)
         await ctx.send(f"{member} was yeeted.")
 
     @commands.command()
     @commands.check(hasPerms)
-    async def ban(self, ctx, member: commands.MemberConverter, *, reason=None):
-        await ctx.guild.ban(reason=reason)
+    async def ban(self, ctx, member: discord.Member, *, reason=None):
+        await member.ban(reason=reason)
         await ctx.send(f"{member} was yeeted^2.")
 
     @commands.command()
     @commands.check(hasPerms)
-    async def tempban(self, ctx, member: commands.MemberConverter, duration: DurationConverter, *, reason=None):
+    async def tempban(self, ctx, member: discord.Member, duration: DurationConverter, *, reason=None):
 
         multiplier = {'s': 1, 'm': 60, 'h': 3600}
         amount, unit = duration
 
-        await ctx.guild.ban(member, reason=reason)
+        await member.ban(member, reason=reason)
         await ctx.send(f"{member} was yeeted^2 for {amount}{unit}.")
         await asyncio.sleep(amount * multiplier[unit])
         await ctx.guild.unban(member)

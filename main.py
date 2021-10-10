@@ -93,7 +93,7 @@ async def ping(ctx):
     await ctx.send(f"Pong! \n{bot.latency * 1000}ms")
 
 
-@bot.command()
+@bot.command(aliases=["headpat", "pet"])
 async def goodBot(ctx):
     username = ctx.author.mention
     await ctx.send(f"Thanks {username} ヽ(=^･ω･^=)丿")

@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.voice_client import VoiceClient
 import youtube_dl
 import asyncio
 
@@ -24,8 +25,6 @@ ffmpeg_options = {  # idk just don't delete
 }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)  # youtube download
-
-client = commands.Bot(command_prefix='~')
 
 # this is all copy paste from https://github.com/RK-Coding/Videos/blob/master/rkcodingmusicqueue.py
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -60,7 +59,7 @@ class Music(commands.Cog):
         print("Music is loaded")
 
     # commands starts here
-    @commands.command()
+    @commands.command(aliases=['p'])
     async def play(self, ctx, *, title):
         if ctx.author.voice is not None:
             channel = ctx.author.voice.channel  # finding which channel is the author
@@ -79,7 +78,7 @@ class Music(commands.Cog):
 
         await ctx.send(f"**Now playing:** {player.title}")
 
-    @commands.command()
+    @commands.command(aliases=['l'])
     async def leave(self, ctx):
         await ctx.voice_client.disconnect()
         await ctx.send("Bye!")

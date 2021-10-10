@@ -97,6 +97,11 @@ class Expand1(commands.Cog):
         elif result == "player":
             await ctx.send(f"{bot_choice}!\nAwh I lost.")
 
+    @commands.command()
+    async def RandomNumber(self, range1, range2):
+        RanNum = random.choice(range1, range2)
+        await ctx.send(RanNum)
+
 
 def setup(bot):
     bot.add_cog(Expand1(bot))
