@@ -14,17 +14,17 @@ extract and rename to ffmpeg!
 
 Windows+S search for "System Environment"
 
-[2021-10-10 19_57_32-Window](https://user-images.githubusercontent.com/75881405/136694655-87d00d6e-c388-4dc2-8211-60f0871910c1.png)
-
 Environment Variables
 
-![2021-10-10 19_57_44-Window](https://user-images.githubusercontent.com/75881405/136694815-967a2be0-1fad-419a-96bc-808e54c7f3f4.png)
+![2021-10-10 19_57_32-Window](https://user-images.githubusercontent.com/75881405/136694838-3b288ed4-f4fa-4fb4-9bc3-405712d4faa1.png)
 
 PATH -> Edit -> New
 
-![2021-10-10 19_57_57-Window](https://user-images.githubusercontent.com/75881405/136694819-2fa34009-1560-4bfb-b561-7e8bdbc37faf.png)
+![2021-10-10 19_57_44-Window](https://user-images.githubusercontent.com/75881405/136694839-a2887227-3c34-4e55-9857-2983d8beb23f.png)
 
 Path to the ffmpeg\bin
+
+![2021-10-10 19_57_57-Window](https://user-images.githubusercontent.com/75881405/136694845-49f313c1-3601-4d31-9341-6794b0304d02.png)
 
 PyNaCl:
 type this in a administrator command line or the terminal of pycharm
