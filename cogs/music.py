@@ -9,7 +9,7 @@ youtube_dl.utils.bug_reports_message = lambda: ''
 # https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
 ytdl_format_options = {  # sets the quality of the audio
     'format': 'worstaudio',
-    'outtmpl': '%(id)s-%(title)s.%(ext)s',
+    'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
@@ -29,7 +29,7 @@ ytdl = youtube_dl.YoutubeDL(ytdl_format_options)  # youtube download
 
 client = commands.Bot(command_prefix='!')
 queue = []
-
+loop = False
 
 # this class is all copy paste from https://github.com/RK-Coding/Videos/blob/master/rkcodingmusicqueue.py
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -53,6 +53,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
+
 # this is one hell of a library
 class Music(commands.Cog):
 
@@ -64,6 +65,18 @@ class Music(commands.Cog):
         print("Music is loaded")
 
     # commands starts here
+    @commands.command(aliases=["loop"])
+    async def loop_(self, ctx):
+        global loop
+
+        if loop:
+            await ctx.send("Loop mode is now disabled")
+            loop = False
+
+        else:
+            await ctx.send("Loop mode is now enabled")
+            loop = True
+
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, title):
         global queue
@@ -76,20 +89,32 @@ class Music(commands.Cog):
                 return
 
             await channel.connect()  # joining the channel itself
-        except discord.ClientException:
+        except discord.ClientException:  # except: already joined the channel
             pass
 
+        queue.append(title)
         server = ctx.message.guild
         voice_channel = server.voice_client
 
-        async with ctx.typing():
-            player = await YTDLSource.from_url(title, loop=client.loop)
-            voice_channel.play(player, after=lambda e: print("Player error: %s' %e") if e else None)
-            del(queue[0])
+        try:
+            voice_channel.stop()  # ends the current song if there is
+        except:
+            pass
 
-        await ctx.send(f"**Now playing:** {player.title}")
+        try:  # if there's a song playing, add it to queue
+            async with ctx.typing():
+                player = await YTDLSource.from_url(queue[0], loop=client.loop)  # idk wtf is going on here
+                voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
 
-    @commands.command(aliases=['p', 's', "stop"])
+                if loop:
+                    queue.append(queue[0])
+
+                del (queue[0])
+                await ctx.send(f"**Now playing:** {player.title}")
+        except discord.ClientException:  # except: already playing a song
+            await ctx.send(f"`{title}` added to queue")
+
+    @commands.command(aliases=['s', "stop"])
     async def pause(self, ctx):
         server = ctx.message.guild
         voice_channel = server.voice_client
@@ -108,24 +133,28 @@ class Music(commands.Cog):
         global queue
 
         queue.append(title)
-        await ctx.send(f"`{title} added to queue")
+        await ctx.send(f"`{title}` added to queue")
 
     @commands.command(alises=['r'])
     async def remove(self, ctx, song):
         global queue
 
         try:
-            del(queue[int(song)])
+            del (queue[int(song-1)])  # -1 cuz index
             await ctx.send(f"Your queue is now `{queue}`")
-        except:
-            await ctx.send("Your queue is empty or you gave a invalid number")
+        except commands.MissingRequiredArgument or IndexError:
+            await ctx.send(f"{ctx.author.mention} Your queue is empty or you gave a invalid number")
 
-    @commands.command()
+    @commands.command(aliases=['v'])
     async def view(self, ctx):
-        await ctx.send(f"`queue`")
+        global queue
+
+        await ctx.send(f"`{queue}`")
 
     @commands.command(aliases=['l'])
     async def leave(self, ctx):
+        global queue
+        queue = []  # erase queue on leave
         await ctx.voice_client.disconnect()
         await ctx.send("Bye!")
 
