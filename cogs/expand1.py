@@ -1,9 +1,8 @@
 from discord.ext import commands
 import random
 
+
 # lists
-player2 = ["scissors", "paper", "stone"]
-valid = ["scissors", "scissor", "paper", "stone", "rock"]
 die = ["Pls no, I can do so much more", "Why have you brought my life to an end", "I still haven't had a family"]
 
 # not safe
@@ -14,25 +13,31 @@ die = ["Pls no, I can do so much more", "Why have you brought my life to an end"
 #     return eval(expression)
 
 def RPS_logic(p1, p2):
-    if p1.lower() not in valid:
-        return "bot"
-    if p1.lower() == p2:
+    if p1.lower() == "rock" or "stone":  # changing string to int to prevent spam
+        p1 = 1
+    elif p1.lower() == "paper" or "cloth":
+        p1 = 2
+    elif p1.lower() == "scissor" or "scissors":
+        p1 = 3
+    if p1 == p2:
         return "both"
-    if p1.lower() == "scissors" or "scissor":
-        if p2 == "paper":
+
+    if p1 == 3:  # scissors
+        if p2 == 2:  # paper
+            return "player"  # 1=rock 2=paper 3=scissors
+        else:
+            return "bot"
+    if p1 == 2:  # paper
+        if p2 == 1:  # rock
             return "player"
         else:
             return "bot"
-    if p1.lower() == "paper":
-        if p2 == "rock":
+    if p1 == 2:  # paper
+        if p2 == 3:  # scissors
             return "player"
         else:
             return "bot"
-    if p1.lower() == "stone" or "rock":
-        if p2 == "scissors" or "scissor":
-            return "player"
-        else:
-            return "bot"
+    return "bot"
 
 
 class Expand1(commands.Cog):
@@ -88,18 +93,27 @@ class Expand1(commands.Cog):
 
     @commands.command(aliases=["RPS", "SPS"])
     async def rock_paper_scissors(self, ctx, player1):
-        bot_choice = random.choice(player2)
+
+        bot_choice = random.randint(1, 3)
         result = RPS_logic(player1, bot_choice)
+
+        if bot_choice == 1:  # changing number to string
+            bot_choice_str = "Rock"
+        elif bot_choice == 2:
+            bot_choice_str = "Paper"
+        else:
+            bot_choice_str = "Scissors"
+
         if result == "both":
-            await ctx.send(f"{bot_choice}!\nI guess we tied.")
+            await ctx.send(f"{bot_choice_str}!\nI guess we tied.")
         elif result == "bot":
-            await ctx.send(f"{bot_choice}!\nI win.")
+            await ctx.send(f"{bot_choice_str}!\nI win.")
         elif result == "player":
-            await ctx.send(f"{bot_choice}!\nAwh I lost.")
+            await ctx.send(f"{bot_choice_str}!\nAwh I lost.")
 
     @commands.command()
-    async def RandomNumber(self, range1, range2):
-        RanNum = random.choice(range1, range2)
+    async def RandomNumber(self, ctx, range1, range2):
+        RanNum = random.randint(range1, range2)
         await ctx.send(RanNum)
 
 
