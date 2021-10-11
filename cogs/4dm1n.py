@@ -69,7 +69,7 @@ class Admin(commands.Cog):
         multiplier = {'s': 1, 'm': 60, 'h': 3600}
         amount, unit = duration
 
-        await member.ban(member, reason=reason)
+        await member.ban(reason=reason)
         await ctx.send(f"{member} was yeeted^2 for {amount}{unit}.")
         await asyncio.sleep(amount * multiplier[unit])
         await ctx.guild.unban(member)

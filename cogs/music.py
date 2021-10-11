@@ -6,9 +6,10 @@ import asyncio
 
 youtube_dl.utils.bug_reports_message = lambda: ''
 
+# https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
 ytdl_format_options = {  # sets the quality of the audio
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'format': 'worstaudio',
+    'outtmpl': '%(id)s-%(title)s.%(ext)s',
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
@@ -26,7 +27,11 @@ ffmpeg_options = {  # idk just don't delete
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)  # youtube download
 
-# this is all copy paste from https://github.com/RK-Coding/Videos/blob/master/rkcodingmusicqueue.py
+client = commands.Bot(command_prefix='!')
+queue = []
+
+
+# this class is all copy paste from https://github.com/RK-Coding/Videos/blob/master/rkcodingmusicqueue.py
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -61,13 +66,18 @@ class Music(commands.Cog):
     # commands starts here
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, title):
-        if ctx.author.voice is not None:
-            channel = ctx.author.voice.channel  # finding which channel is the author
-        else:
-            await ctx.send("You're not in a voice channel")
-            return
+        global queue
 
-        await channel.connect()  # joining the channel itself
+        try:
+            if ctx.author.voice is not None:
+                channel = ctx.author.voice.channel  # finding which channel is the author
+            else:
+                await ctx.send("You're not in a voice channel")
+                return
+
+            await channel.connect()  # joining the channel itself
+        except discord.ClientException:
+            pass
 
         server = ctx.message.guild
         voice_channel = server.voice_client
@@ -75,8 +85,44 @@ class Music(commands.Cog):
         async with ctx.typing():
             player = await YTDLSource.from_url(title, loop=client.loop)
             voice_channel.play(player, after=lambda e: print("Player error: %s' %e") if e else None)
+            del(queue[0])
 
         await ctx.send(f"**Now playing:** {player.title}")
+
+    @commands.command(aliases=['p', 's', "stop"])
+    async def pause(self, ctx):
+        server = ctx.message.guild
+        voice_channel = server.voice_client
+
+        voice_channel.pause()
+
+    @commands.command()
+    async def resume(self, ctx):
+        server = ctx.message.guild
+        voice_channel = server.voice_client
+
+        voice_channel.resume()
+
+    @commands.command(aliases=["queue", 'q'])
+    async def queue_(self, ctx, title):
+        global queue
+
+        queue.append(title)
+        await ctx.send(f"`{title} added to queue")
+
+    @commands.command(alises=['r'])
+    async def remove(self, ctx, song):
+        global queue
+
+        try:
+            del(queue[int(song)])
+            await ctx.send(f"Your queue is now `{queue}`")
+        except:
+            await ctx.send("Your queue is empty or you gave a invalid number")
+
+    @commands.command()
+    async def view(self, ctx):
+        await ctx.send(f"`queue`")
 
     @commands.command(aliases=['l'])
     async def leave(self, ctx):
