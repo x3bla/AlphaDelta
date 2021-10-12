@@ -31,7 +31,7 @@ type this in a administrator command line or the terminal of pycharm:
 
 `python3 -m pip install -U discord.py[voice]`
 
-Youtube_dl:
+Youtube-dl:
 
 `pip install youtube-dl`
 
