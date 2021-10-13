@@ -12,6 +12,8 @@ ytdl_format_options = {  # sets the quality of the audio
     'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
     'restrictfilenames': True,
     'noplaylist': True,
+    'keepvideo': False,
+    'max_filesize': 5000,  # in KB
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
@@ -27,9 +29,6 @@ ffmpeg_options = {  # idk just don't delete
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)  # youtube download
 
-client = commands.Bot(command_prefix='!')
-queue = []
-loop = False
 
 # this class is all copy paste from https://github.com/RK-Coding/Videos/blob/master/rkcodingmusicqueue.py
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -54,6 +53,11 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 
+client = commands.Bot(command_prefix='!')
+queue = []
+loop = False
+
+
 # this is one hell of a library
 class Music(commands.Cog):
 
@@ -65,7 +69,7 @@ class Music(commands.Cog):
         print("Music is loaded")
 
     # commands starts here
-    @commands.command(aliases=["loop"])
+    @commands.command(name="loop")
     async def loop_(self, ctx):
         global loop
 
@@ -78,43 +82,44 @@ class Music(commands.Cog):
             loop = True
 
     @commands.command(aliases=['p'])
-    async def play(self, ctx, *, title):
+    async def play(self, ctx, *, url):
         global queue
 
-        try:
-            if ctx.author.voice is not None:
-                channel = ctx.author.voice.channel  # finding which channel is the author
-            else:
-                await ctx.send("You're not in a voice channel")
-                return
+        if not ctx.message.author.voice:
+            await ctx.send("You are not connected to a voice channel")
+            return
 
-            await channel.connect()  # joining the channel itself
-        except discord.ClientException:  # except: already joined the channel
+        else:
+            channel = ctx.message.author.voice.channel
+
+        try:
+            await channel.connect()
+        except discord.ClientException:
             pass
 
-        queue.append(title)
+        queue.append(url)
         server = ctx.message.guild
         voice_channel = server.voice_client
 
         try:
             voice_channel.stop()  # ends the current song if there is
-        except:
+        except voice_channel.ClientException:
             pass
 
-        try:  # if there's a song playing, add it to queue
-            async with ctx.typing():
-                player = await YTDLSource.from_url(queue[0], loop=client.loop)  # idk wtf is going on here
-                voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
+        async with ctx.typing():
+            player = await YTDLSource.from_url(queue[0], loop=client.loop)  # idk wtf is going on here
+            voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
 
-                if loop:
-                    queue.append(queue[0])
+            if loop:
+                queue.append(queue[0])  # adding back into the queue if loop is True
 
-                del (queue[0])
-                await ctx.send(f"**Now playing:** {player.title}")
-        except discord.ClientException:  # except: already playing a song
-            await ctx.send(f"`{title}` added to queue")
+            del (queue[0])
+        if voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None):
+            await ctx.send(f"**Now playing:** {player.title}")
+        else:
+            await ctx.send("Fuck outta here, that video's way too large")
 
-    @commands.command(aliases=['s', "stop"])
+    @commands.command(aliases=["stop"])
     async def pause(self, ctx):
         server = ctx.message.guild
         voice_channel = server.voice_client
@@ -128,8 +133,28 @@ class Music(commands.Cog):
 
         voice_channel.resume()
 
+    @commands.command(aliases=['s'])
+    async def skip(self, ctx):
+        server = ctx.message.guild
+        voice_channel = server.voice_client
+
+        try:
+            voice_channel.stop()
+
+            async with ctx.typing():
+                player = await YTDLSource.from_url(queue[0], loop=client.loop)  # idk wtf is going on here
+                voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
+
+                if loop:
+                    queue.append(queue[0])  # adding back into the queue if loop is True
+
+                del (queue[0])
+            await ctx.send(f"**Now playing:** {player.title}")
+        except discord.VoiceClient:
+            await ctx.send("There is no song to skip")
+
     @commands.command(aliases=["queue", 'q'])
-    async def queue_(self, ctx, title):
+    async def queue_(self, ctx, *, title):
         global queue
 
         queue.append(title)
@@ -139,13 +164,14 @@ class Music(commands.Cog):
     async def remove(self, ctx, song):
         global queue
 
-        try:
-            del (queue[int(song-1)])  # -1 cuz index
-            await ctx.send(f"Your queue is now `{queue}`")
-        except commands.MissingRequiredArgument or IndexError:
-            await ctx.send(f"{ctx.author.mention} Your queue is empty or you gave a invalid number")
+        del (queue[int(song) - 1])  # -1 cuz index
+        await ctx.send(f"Your queue is now `{queue}`")
 
-    @commands.command(aliases=['v'])
+    @remove.error
+    async def remove_error(self, ctx, error):  # even if unused, error variable is received
+        await ctx.send(f"{ctx.author.mention} Your queue is empty or you gave a invalid number")
+
+    @commands.command(aliases=['v', "list"])
     async def view(self, ctx):
         global queue
 
@@ -157,6 +183,12 @@ class Music(commands.Cog):
         queue = []  # erase queue on leave
         await ctx.voice_client.disconnect()
         await ctx.send("Bye!")
+        ctx.voice_client.cleanup()  # useful for clearing buffer data or processes after it is done playing audio
+
+    @leave.error
+    async def leave_error(self, ctx, error):
+        if isinstance(error, commands.CommandInvokeError):
+            await ctx.send("But I'm not in a voice channel?")
 
 
 def setup(bot):
