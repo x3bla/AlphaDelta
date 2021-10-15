@@ -33,7 +33,7 @@ type this in a administrator command line or the terminal of pycharm:
 
 Youtube-dl:
 
-`pip install youtube-dl`
+`pip install youtube_dl`
 
 ## Discord Bot Setup
 
@@ -49,3 +49,25 @@ create a link here, and paste it into your browser to invite the bot
 
 ![2021-10-10 20_22_59-Window](https://user-images.githubusercontent.com/75881405/136695727-8914b8df-868b-4261-8476-8063ee3fc15e.png)
 
+## Data.json
+
+Add your bot's token and and your discord's ID (enable developer mode in settings)
+
+Copy your token here (Keep it secret!)
+![2021-10-14 09_33_55-Window](https://user-images.githubusercontent.com/75881405/137235616-6094d016-0791-4ee9-be30-663a84b1d92c.png)
+
+Copy your ID here
+![2021-10-14 09_29_53-Discord](https://user-images.githubusercontent.com/75881405/137235705-3bf9dc20-60d0-4270-987f-7ccfc67a8f14.png)
+
+![2021-10-14 09_32_53-bot-command - Discord](https://user-images.githubusercontent.com/75881405/137235726-c942bb1b-f4bc-4a9a-9fbf-7cd5339978ce.png)
+
+and place the info into Data.json as such
+![2021-10-14 09_35_56-data json - Notepad](https://user-images.githubusercontent.com/75881405/137235779-181e69ea-b10c-4afc-92a8-44de22103b5a.png)
+
+## What does the JSON do
+
+The headpats are just a way to keep track of the amount of times people complpimented the bot with !goodbot (prefix by default is !, changeable"
+
+opID is to let the bot know who's able to do admin commands from discord chat, such as !unload or !reload the cogs
+
+Token represents which bot is being run
