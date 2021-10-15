@@ -8,20 +8,20 @@ youtube_dl.utils.bug_reports_message = lambda: ''
 
 # https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
 ytdl_format_options = {  # sets the quality of the audio
-    'format': 'worstaudio',
+    'format': '249/250/251',
     'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'keepvideo': False,
-    'max_filesize': 5000,  # in KB
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
+    # 'restrictfilenames': True,
+    # 'noplaylist': True,
+    # 'keepvideo': False,
+    'max_filesize': 5000000,  # in Bytes
+    # 'nocheckcertificate': True,
+    # 'ignoreerrors': False,
+    # 'logtostderr': False,
+    # 'quiet': False,
+    # 'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
-}
+    # 'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
+}  # spam of comments to see which is unneeded
 
 ffmpeg_options = {  # idk just don't delete
     'options': '-vn'
@@ -82,7 +82,7 @@ class Music(commands.Cog):
             loop = True
 
     @commands.command(aliases=['p'])
-    async def play(self, ctx, *, url):
+    async def play(self, ctx, *, title):
         global queue
 
         if not ctx.message.author.voice:
@@ -97,7 +97,7 @@ class Music(commands.Cog):
         except discord.ClientException:
             pass
 
-        queue.append(url)
+        queue.append(title)
         server = ctx.message.guild
         voice_channel = server.voice_client
 
@@ -105,19 +105,18 @@ class Music(commands.Cog):
             voice_channel.stop()  # ends the current song if there is
         except voice_channel.ClientException:
             pass
+        try:
+            async with ctx.typing():
+                player = await YTDLSource.from_url(queue[0], loop=client.loop)  # idk wtf is going on here
+                voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
 
-        async with ctx.typing():
-            player = await YTDLSource.from_url(queue[0], loop=client.loop)  # idk wtf is going on here
-            voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
+                if loop:
+                    queue.append(queue[0])  # adding back into the queue if loop is True
 
-            if loop:
-                queue.append(queue[0])  # adding back into the queue if loop is True
-
-            del (queue[0])
-        if voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None):
-            await ctx.send(f"**Now playing:** {player.title}")
-        else:
-            await ctx.send("Fuck outta here, that video's way too large")
+                del (queue[0])
+                await ctx.send(f"**Now playing:** {player.title}")
+        except discord.ClientException:  # except: already playing a song
+            await ctx.send(f"`{title}` added to queue")
 
     @commands.command(aliases=["stop"])
     async def pause(self, ctx):
@@ -183,7 +182,6 @@ class Music(commands.Cog):
         queue = []  # erase queue on leave
         await ctx.voice_client.disconnect()
         await ctx.send("Bye!")
-        ctx.voice_client.cleanup()  # useful for clearing buffer data or processes after it is done playing audio
 
     @leave.error
     async def leave_error(self, ctx, error):
