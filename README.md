@@ -33,7 +33,7 @@ type this in a administrator command line or the terminal of pycharm:
 
 Youtube-dl:
 
-`pip install youtube-dl`
+`pip install youtube_dl`
 
 ## Discord Bot Setup
 
