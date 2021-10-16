@@ -1,7 +1,7 @@
 {
   "headpats": 0,
   "opID": [
-    your_discord_id
+    your_discord_id_int_only
   ],
   "token": "your_token"
 }
