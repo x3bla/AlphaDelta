@@ -5,6 +5,8 @@ A bot that does whatever their owner wants. Badly
 
 For the bot to work 100%, you need to FFmpeg and add the bin folder to path, Youtube_dl and PyNaCl with discord Voice
 
+**CHANGE THE data.txt INTO data.json**
+
 ## ffmpeg Installation Winows
 - [ffmpeg link (Windows build by BtbN)](https://ffmpeg.org/download.html#build-windows)
 
