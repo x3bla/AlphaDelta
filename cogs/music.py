@@ -24,7 +24,7 @@ ytdl_format_options = {  # sets the quality of the audio
     # 'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
 }  # spam of comments to see which is unneeded
 
-ffmpeg_options = {  # idk just don't delete
+ffmpeg_options = {  # idk just don't delete this
     'options': '-vn'
 }
 
