@@ -1,20 +1,22 @@
 import discord
 from discord.ext import commands
 from discord.voice_client import VoiceClient
-import youtube_dl
+import yt_dlp
 import asyncio
 import os
 
 # youtube_dl.utils.bug_reports_message = lambda: ''  # ????
 
 # https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
-ytdl_format_options = {  # sets the quality of the audio
+ytdlp_format_options = {  # sets the quality of the audio
     'format': '249/250/251',  # basically 'worstaudio' but youtube comment said to use this
     'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
     # 'restrictfilenames': True,
     'noplaylist': True,
+    'concurrent_fragment_downloads': 5,
     # 'keepvideo': False,
     'max_filesize': 5000000,  # in Bytes
+    'throttledratelimit': 100000,
     # 'nocheckcertificate': True,
     # 'ignoreerrors': False,
     # 'logtostderr': False,
@@ -28,7 +30,7 @@ ffmpeg_options = {  # idk just don't delete this
     'options': '-vn'
 }
 
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)  # loading youtube download options
+ytdl = yt_dlp.YoutubeDL(ytdlp_format_options)  # loading youtube download options
 
 async def getVideoData(searchString: str, download=False):  # throwing title in to get a ton of data
     data = ytdl.extract_info(searchString, download=download)
@@ -54,25 +56,29 @@ class VideoQueueItem:  # download the video
     async def __download(self, fileName=None):
         ytdl.download(self.videoData.url)
 
-    async def download(self, fileName=None):
-        await self.__download(self.videoData.url)
+    async def download(self, fileName=None):        # download is slow because youtube-dl is slow (80KBps)
+        await self.__download(self.videoData.url)   # everyone else has slow download speed
+
+    def returnTitle(self):
+        return self.videoData.title
 
     def printThis(self):
         print(f'{self.videoData.title}')
 
-class VideoQueue(dict):  # a queue for each server
-    def __init__(self):
-        super().__init__()
-        self.queue = dict()  # set class as dictionary
+class VideoQueue:  # a queue for each server
+    """the main queue to add and extract data from a dictionary"""
+
+    queue = {}  # set class as dictionary
 
     def displayQueue(self, index):
-        pass
+        raise NotImplementedError
 
     def addVideo(self, server, videoItem: VideoQueueItem):
-        if server not in self:
-            self.queue[server] = videoItem  # if the key "server's name" does not exist, create it
+        videoTitle = videoItem.returnTitle()  # getting the video's title
+        if server not in self.queue:
+            self.queue[server] = videoTitle  # if the key "server's name" does not exist, create it
         else:
-            self.queue[server].append(videoItem)
+            self.queue[server].append(videoTitle)
 
     async def removeVideo(self, videoItem: int):
         # del(self.queue[videoItem])
@@ -85,6 +91,13 @@ class VideoQueue(dict):  # a queue for each server
     async def searchAndAddVideo(self, server, searchString: str):
         # loop = asyncio.get_event_loop()
         await self.__searchVideo(server, searchString)
+
+class AutoPlay:
+    def __init__(self, server):
+        self.server = server
+
+    async def play(self):
+        raise NotImplementedError
 
 # this class is all copy paste from https://github.com/RK-Coding/Videos/blob/master/rkcodingmusicqueue.py
 # class YTDLSource(discord.PCMVolumeTransformer):  # altering this to get info
@@ -155,7 +168,8 @@ class Music(commands.Cog):
         #     if file.endswith(".webm"):
         #         os.remove(file)
 
-        current_song = getVideoData(title)
+        data = await getVideoData(title)
+        current_song = data['title']
         queue = VideoQueue()
 
         server = ctx.message.guild  # the server where the command is sent
@@ -168,12 +182,13 @@ class Music(commands.Cog):
             pass
 
         async with ctx.typing():
+            temp = VideoQueueItem(current_song, VideoData(current_song))
+            await temp.download()
             # player = await YTDLSource.from_url(queue[0], loop=client.loop)  # idk wtf is going on here
             # voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
 
-            for file in os.listdir("./"):
+            for file in os.listdir("./"):  # play the file
                 if file.endswith(".webm"):
-                    # os.rename(file, "song.webm")
                     voice_channel.play(discord.FFmpegOpusAudio(file))
 
             if loop:
@@ -220,7 +235,7 @@ class Music(commands.Cog):
         except discord.VoiceClient:
             await ctx.send("There is no song to skip")
 
-    @commands.command(aliases=["queue", 'q'])
+    @commands.command(name="queue", alias='q')
     async def queue_(self, ctx, *, title):
 
         # check if a song is playing before queueing
@@ -257,6 +272,7 @@ class Music(commands.Cog):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send("But I'm not in a voice channel?")
 
+    # autoplay feature here probably
 
 def setup(bot):
     bot.add_cog(Music(bot))
