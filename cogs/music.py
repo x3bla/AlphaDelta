@@ -9,14 +9,13 @@ import os
 
 # https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
 ytdlp_format_options = {  # sets the quality of the audio
-    'format': '249/250/251',  # basically 'worstaudio' but youtube comment said to use this
+    'format': 'worstaudio',
     'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
     # 'restrictfilenames': True,
     'noplaylist': True,
-    'concurrent_fragment_downloads': 5,
+    # 'concurrent_fragment_downloads': 5,
     # 'keepvideo': False,
     'max_filesize': 5000000,  # in Bytes
-    'throttledratelimit': 100000,
     # 'nocheckcertificate': True,
     # 'ignoreerrors': False,
     # 'logtostderr': False,
@@ -49,15 +48,18 @@ class VideoData:  # getting video's youtube title
                                'title, webpage_url')
 
 class VideoQueueItem:  # download the video
-    def __init__(self, videoSearchString: str, videoData: VideoData):
-        self.videoSearchString = videoSearchString
+    def __init__(self, videoData: VideoData):
         self.videoData = videoData
+        self.randomList = [""]
 
     async def __download(self, fileName=None):
-        ytdl.download(self.videoData.url)
+        print(self.videoData.url)
+        self.randomList[0] = self.videoData.url
+        ytdl.download(self.randomList)
+        print("am done, shouldn't be fucking downloading any shit")
 
-    async def download(self, fileName=None):        # download is slow because youtube-dl is slow (80KBps)
-        await self.__download(self.videoData.url)   # everyone else has slow download speed
+    async def download(self, fileName=None):
+        await self.__download(self.videoData.url)
 
     def returnTitle(self):
         return self.videoData.title
@@ -70,8 +72,8 @@ class VideoQueue:  # a queue for each server
 
     queue = {}  # set class as dictionary
 
-    def displayQueue(self, index):
-        raise NotImplementedError
+    def displayQueue(self, server):
+        return self.queue[server]
 
     def addVideo(self, server, videoItem: VideoQueueItem):
         videoTitle = videoItem.returnTitle()  # getting the video's title
@@ -82,11 +84,12 @@ class VideoQueue:  # a queue for each server
 
     async def removeVideo(self, videoItem: int):
         # del(self.queue[videoItem])
-        print(self.queue[videoItem])
+        # print(self.queue[videoItem])
+        pass
 
     async def __searchVideo(self, server, searchString: str):
         data = await getVideoData(searchString)
-        self.addVideo(server, VideoQueueItem(searchString, VideoData(data)))
+        self.addVideo(server, VideoQueueItem(VideoData(data)))
 
     async def searchAndAddVideo(self, server, searchString: str):
         # loop = asyncio.get_event_loop()
@@ -164,11 +167,7 @@ class Music(commands.Cog):
         except discord.ClientException:
             pass
 
-        # for file in os.listdir("./"):  # removing other song files to prevent spam in folder
-        #     if file.endswith(".webm"):
-        #         os.remove(file)
-
-        data = await getVideoData(title)
+        data = await getVideoData(title)  # getting all of the data beforehand, song title, id, etc
         current_song = data['title']
         queue = VideoQueue()
 
@@ -182,14 +181,10 @@ class Music(commands.Cog):
             pass
 
         async with ctx.typing():
-            temp = VideoQueueItem(current_song, VideoData(current_song))
+            temp = VideoQueueItem(VideoData(data))  # first item in search
             await temp.download()
-            # player = await YTDLSource.from_url(queue[0], loop=client.loop)  # idk wtf is going on here
-            # voice_channel.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
 
-            for file in os.listdir("./"):  # play the file
-                if file.endswith(".webm"):
-                    voice_channel.play(discord.FFmpegOpusAudio(file))
+            voice_channel.play(discord.FFmpegOpusAudio(ytdl.prepare_filename(data)))
 
             if loop:
                 await queue.searchAndAddVideo(server, title)  # adding back into the queue if loop is True
@@ -255,9 +250,12 @@ class Music(commands.Cog):
 
     @commands.command(aliases=['v', "list"])
     async def view(self, ctx):
-        # queue obj
-        raise NotImplementedError
-        # await ctx.send(f"`{queue}`")
+        try:
+            server = ctx.message.guild
+            queue = VideoQueue().displayQueue(server)
+            await ctx.send(f"`{queue}`")
+        except KeyError:
+            await ctx.send("The queue is empty")
 
     @commands.command(aliases=['l'])
     async def leave(self, ctx):
