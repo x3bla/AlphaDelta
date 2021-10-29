@@ -1,10 +1,9 @@
 import discord
 from discord.ext import commands
-
-import yt_dlp
-
-
-
+from cogs.video.yt_downloader import *
+from cogs.video.videodata import *
+from cogs.video.videoqueue import *
+from cogs.video.autoplay import *
 
 class Music(commands.Cog):
 
@@ -18,7 +17,6 @@ class Music(commands.Cog):
     # commands starts here
     @commands.command(name="loop")
     async def loop_(self, ctx):
-        global loop
 
         if loop:
             await ctx.send("Loop mode is now disabled")
@@ -30,8 +28,6 @@ class Music(commands.Cog):
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, title):
-        global loop
-        global auto_play_flag
 
         if not ctx.message.author.voice:
             await ctx.send("You are not connected to a voice channel")
@@ -49,9 +45,9 @@ class Music(commands.Cog):
             # TODO: play the queue and enable autoplay
             return
 
-        data = await getVideoData(title)  # getting all of the data beforehand, song title, id, etc
+        data = await videodata.getVideoData(title)  # getting all of the data beforehand, song title, id, etc
         current_song = data['title']
-        queue = VideoQueue()
+        queue = videoqueue.VideoQueue()
 
         server = ctx.message.guild  # the server where the command is sent
         voice_channel = server.voice_client  # the voice channel of the user who sent the command
@@ -70,7 +66,8 @@ class Music(commands.Cog):
 
             voice_channel.play(discord.FFmpegOpusAudio(ytdl.prepare_filename(data)))  # play song
 
-            if loop:
+            autoplay = AutoPlay(server)
+            if autoplay.loop:
                 queue.addVideo(server, current_song)  # adding back into the queue if loop is True
             # TODO: MOVE DEL LINE TO AUTOPLAY
             # await queue.removeVideo(server, 0)  # removing first video from list since it's playing

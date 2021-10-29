@@ -1,4 +1,3 @@
-import videodata
 import videoqueue
 
 class AutoPlay:
