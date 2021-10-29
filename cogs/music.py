@@ -1,97 +1,9 @@
 import discord
 from discord.ext import commands
-# from discord.voice_client import VoiceClient
+
 import yt_dlp
 
-# import asyncio
-# import os
 
-
-# https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
-ytdlp_format_options = {  # sets the quality of the audio
-    'format': 'worstaudio',
-    'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
-    'restrictfilenames': True,
-    'noplaylist': False,
-    # 'concurrent_fragment_downloads': 5,
-    'max_filesize': 5000000,  # 5MB bytes
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
-}  # spam of comments to see which is unneeded
-
-ytdl = yt_dlp.YoutubeDL(ytdlp_format_options)  # loading youtube download options
-
-
-async def getVideoData(searchString: str, download=False):  # throwing title in to get a ton of data
-    data = ytdl.extract_info(searchString, download=download)
-    entries = data.get('entries')
-    if entries is not None:
-        return entries[0] if len(entries) > 0 else None
-    else:
-        return data
-
-
-class VideoData:  # getting video's youtube title
-    def __init__(self, extractedData):
-        self.title = extractedData['title']
-        self.url = extractedData['webpage_url']
-        if self.title is None or self.url is None:
-            raise RuntimeError('The extracted data specified does not have one of the following:'
-                               'title, webpage_url')
-
-
-class VideoQueueItem:  # download the video
-    def __init__(self, videoData: VideoData):
-        self.videoData = videoData
-
-    async def __download(self):
-        parseToList = [self.videoData.url]  # convert to ["song_name"]
-        ytdl.download(parseToList)  # they use a for loop, so the string breaks down into chars, どうしてわからない
-
-    async def download(self):
-        await self.__download()
-
-
-class VideoQueue:  # a queue for each server
-    """the main queue to add and extract data from a dictionary"""
-
-    queue = {}  # set class as dictionary
-
-    def displayQueue(self, server):
-        return self.queue[server]
-
-    def addVideo(self, server, videoTitle):
-        if server not in self.queue:  # if the key "server's name" does not exist, create it.
-            self.queue[server] = [False, False, videoTitle]  # Loop, auto_play_flag, songs
-        else:
-            self.queue[server].append(videoTitle)
-        print(self.queue, "\n")
-
-    async def removeVideo(self, server, videoItem: int):
-        del (self.queue[server][videoItem])
-
-
-class AutoPlay:
-    """make a flag, while flag: autoplay; else return"""
-
-    def __init__(self, server):
-        global loop
-        self.loop = loop
-        self.server = server
-        self.queue = VideoQueue().displayQueue(server)
-
-    def play(self):
-        raise NotImplementedError
-
-    async def skip(self):
-        raise NotImplementedError
-
-
-# global variables
-loop = False
-auto_play_flag = False
 
 
 class Music(commands.Cog):
