@@ -1,34 +1,25 @@
 import discord
 from discord.ext import commands
-from discord.voice_client import VoiceClient
+# from discord.voice_client import VoiceClient
 import yt_dlp
-import asyncio
-import os
+# import asyncio
+# import os
 
-# youtube_dl.utils.bug_reports_message = lambda: ''  # ????
 
 # https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
 ytdlp_format_options = {  # sets the quality of the audio
     'format': 'worstaudio',
     'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
-    # 'restrictfilenames': True,
+    'restrictfilenames': True,
     'noplaylist': False,
     # 'concurrent_fragment_downloads': 5,
-    # 'keepvideo': False,
     'max_filesize': 5000000,  # 5MB bytes
-    # 'nocheckcertificate': True,
-    # 'ignoreerrors': False,
-    # 'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    # 'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
 }  # spam of comments to see which is unneeded
 
-
-ffmpeg_options = {  # idk just don't delete this
-    'options': '-vn'
-}
 
 ytdl = yt_dlp.YoutubeDL(ytdlp_format_options)  # loading youtube download options
 
@@ -52,18 +43,13 @@ class VideoQueueItem:  # download the video
     def __init__(self, videoData: VideoData):
         self.videoData = videoData
 
-    async def __download(self, fileName=None):
+    async def __download(self):
         parseToList = [self.videoData.url]  # convert to ["song_name"]
         ytdl.download(parseToList)  # they use a for loop, so the string breaks down into chars, どうしてわからない
 
-    async def download(self, fileName=None):
+    async def download(self):
         await self.__download()
 
-    def returnTitle(self):  #
-        return self.videoData.title
-
-    def printThis(self):
-        print(f'{self.videoData.title}')
 
 class VideoQueue:  # a queue for each server
     """the main queue to add and extract data from a dictionary"""
@@ -83,15 +69,8 @@ class VideoQueue:  # a queue for each server
     async def removeVideo(self, server, videoItem: int):
         del(self.queue[server][videoItem])
 
-    async def __searchVideo(self, server, searchString: str):  #
-        data = await getVideoData(searchString)
-        self.addVideo(server, VideoQueueItem(VideoData(data)))
-
-    async def searchAndAddVideo(self, server, searchString: str):  #
-        # loop = asyncio.get_event_loop()
-        await self.__searchVideo(server, searchString)
-
 class AutoPlay:
+    """make a flag, while flag: autoplay; else return"""
     def __init__(self, server):
         self.server = server
 
@@ -99,7 +78,6 @@ class AutoPlay:
         raise NotImplementedError
 
 
-client = commands.Bot(command_prefix='!')
 loop = False
 
 
@@ -127,6 +105,7 @@ class Music(commands.Cog):
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, title):
+        global loop
 
         if not ctx.message.author.voice:
             await ctx.send("You are not connected to a voice channel")
@@ -142,12 +121,12 @@ class Music(commands.Cog):
 
         data = await getVideoData(title)  # getting all of the data beforehand, song title, id, etc
         current_song = data['title']
-        queue = VideoQueue()
+        # queue = VideoQueue()
 
         server = ctx.message.guild  # the server where the command is sent
         voice_channel = server.voice_client  # the voice channel of the user who sent the command
         print(server)
-        queue.addVideo(server, title)
+        # queue.addVideo(server, current_song)
 
         try:
             voice_channel.stop()  # ends the current song if there is
@@ -160,10 +139,10 @@ class Music(commands.Cog):
 
             voice_channel.play(discord.FFmpegOpusAudio(ytdl.prepare_filename(data)))  # play song
 
-            if loop:
-                queue.addVideo(server, current_song)  # adding back into the queue if loop is True
+            # if loop:
+            #     queue.addVideo(server, current_song)  # adding back into the queue if loop is True
             # TODO: MOVE DEL LINE TO AUTOPLAY
-            await queue.removeVideo(server, 0)  # removing first video from list since it's playing
+            # await queue.removeVideo(server, 0)  # removing first video from list since it's playing
             await ctx.send(f"**Now playing:** {current_song}")
 
             #
@@ -204,23 +183,23 @@ class Music(commands.Cog):
         except discord.VoiceClient:
             await ctx.send("There is no song to skip")
 
-    @commands.command(name="queue", alias='q')
+    @commands.command(name="queue", aliases=['q'])
     async def queue_(self, ctx, *, title):
 
         # check if a song is playing before queueing
         # queue.append(title)
         await ctx.send(f"`{title}` added to queue")
 
-    @commands.command(alises=['r'])
+    @commands.command(aliases=['r'])
     async def remove(self, ctx, song):
         raise NotImplementedError
-        # headache here, gl for the classes
         # del (queue[int(song) - 1])  # -1 cuz index
         # await ctx.send(f"Your queue is now `{queue}`")
 
     @remove.error
     async def remove_error(self, ctx, error):  # even if unused, error variable is received
         await ctx.send(f"{ctx.author.mention} Your queue is empty or you gave a invalid number")
+        print(error)
 
     @commands.command(aliases=['v', "list"])
     async def view(self, ctx):
