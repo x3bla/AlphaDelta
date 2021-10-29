@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from cogs.video.yt_downloader import *
+from cogs.video.downloader import *
 from cogs.video.videodata import *
 from cogs.video.videoqueue import *
 from cogs.video.autoplay import *

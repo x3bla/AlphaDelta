@@ -1,4 +1,4 @@
-import yt_downloader as ytdl
+import downloader as ytdl
 import videodata
 
 class VideoQueueItem:  # download the video
@@ -16,17 +16,20 @@ class VideoQueueItem:  # download the video
 class VideoQueue:  # a queue for each server
     """the main queue to add and extract data from a dictionary"""
 
-    queue = {}  # set class as dictionary
+    bot = {}  # set class as dictionary
 
-    def displayQueue(self, server):
-        return self.queue[server]
+    def __init__(self):
+        self.queue = []
+
+    # def displayQueue(self, server):
+    #     return self.bot[server]
 
     def addVideo(self, server, videoTitle):
-        if server not in self.queue:  # if the key "server's name" does not exist, create it.
-            self.queue[server] = [False, False, videoTitle]  # Loop, auto_play_flag, songs
+        if server not in self.bot:  # if the key "server's name" does not exist, create it.
+            self.bot[server] = [False, False, videoTitle]  # Loop, auto_play_flag, songs
         else:
-            self.queue[server].append(videoTitle)
-        print(self.queue, "\n")
+            self.bot[server].append(videoTitle)
+        print(self.bot, "\n")
 
     async def removeVideo(self, server, videoItem: int):
-        del (self.queue[server][videoItem])
+        del (self.bot[server][videoItem])

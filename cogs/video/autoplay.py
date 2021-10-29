@@ -14,3 +14,12 @@ class AutoPlay:
 
     async def skip(self):
         raise NotImplementedError
+
+class DiscordMusicBot:
+
+    def __init__(self, server):
+        self.queue = videoqueue.VideoQueue()
+        self.autoplay = AutoPlay(server)
+        self.server = server
+
+

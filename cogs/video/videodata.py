@@ -1,4 +1,4 @@
-import yt_downloader as ytdl
+import downloader as ytdl
 
 async def getVideoData(searchString: str, download=False):  # throwing title in to get a ton of data
     data = ytdl.ytdl.extract_info(searchString, download=download)
