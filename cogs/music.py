@@ -93,7 +93,6 @@ class AutoPlay:
         voice_channel = server.voice_client  # the voice channel of the user who sent the command
 
         while queue["auto_play_flag"]:
-
             async with ctx.typing():
                 temp = VideoQueueItem(VideoData(data))  # downloading, classes are troublesome
                 await temp.download()
