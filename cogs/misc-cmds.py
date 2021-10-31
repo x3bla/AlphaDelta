@@ -13,11 +13,11 @@ die = ["Pls no, I can do so much more", "Why have you brought my life to an end"
 #     return eval(expression)
 
 def RPS_logic(p1, p2):
-    if p1.lower() == "rock" or "stone":  # changing string to int to prevent spam
+    if p1.lower() == "rock" or p1.lower() == "stone":  # changing string to int to prevent spam
         p1 = 1
-    elif p1.lower() == "paper" or "cloth":
+    elif p1.lower() == "paper" or p1.lower() == "cloth":
         p1 = 2
-    elif p1.lower() == "scissor" or "scissors":
+    elif p1.lower() == "scissor" or p1.lower() == "scissors":
         p1 = 3
     if p1 == p2:
         return "both"
@@ -111,9 +111,9 @@ class Expand1(commands.Cog):
         elif result == "player":
             await ctx.send(f"{bot_choice_str}!\nAwh I lost.")
 
-    @commands.command()
+    @commands.command(aliases=["RNG", "rn", "randomnum"])
     async def RandomNumber(self, ctx, range1, range2):
-        RanNum = random.randint(range1, range2)
+        RanNum = random.randint(int(range1), int(range2))
         await ctx.send(RanNum)
 
 

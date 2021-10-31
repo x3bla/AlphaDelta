@@ -80,14 +80,13 @@ class AutoPlay:
 
     def __init__(self, server):
         self.server = server
-        self.queue = VideoQueue().displayQueue(server)
-        self.loop = self.queue["loop"]
-        self.auto_play_flag = self.queue["auto_play_flag"]
+        # self.loop = self.queue["loop"]
+        # self.auto_play_flag = self.queue["auto_play_flag"]
 
-    async def play(self, ctx, title):
+    async def __play(self, ctx, title):
         data = await getVideoData(title)  # getting all of the data beforehand, song title, id, etc
         current_song = data['title']
-        queue = self.queue
+        queue = VideoQueue().displayQueue(self.server)
 
         server = self.server  # the server where the command is sent
         voice_channel = server.voice_client  # the voice channel of the user who sent the command
@@ -109,7 +108,12 @@ class AutoPlay:
                 await queue.removeVideo(server, 0)  # removing first video from list since it's playing
                 await ctx.send(f"**Now playing:** {current_song}")
 
+    async def play(self, ctx, title):
+        # data stuff maybe
+        await self.__play(ctx, title)
+
     async def play_next(self):
+        # main autoplay loop
         raise NotImplementedError
 
     async def skip(self):
@@ -155,6 +159,7 @@ class Music(commands.Cog):
 
         try:  # if bot is not in VC, join it
             await channel.connect()
+
         except discord.ClientException:
             pass
 
