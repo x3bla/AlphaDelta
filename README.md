@@ -3,7 +3,7 @@ A bot that does whatever their owner wants. Badly
 
 # Installation
 
-For the bot to work 100%, you need to FFmpeg and add the bin folder to path, Youtube_dl and PyNaCl with discord Voice
+For the bot to work 100%, you need to FFmpeg and add the bin folder to path, yt-dlp and PyNaCl with discord Voice
 
 **CHANGE THE data.txt INTO data.json**
 
@@ -35,7 +35,7 @@ type this in a administrator command line or the terminal of pycharm:
 
 Youtube-dl:
 
-`pip install youtube_dl`
+`pip install yt-dlp`
 
 ## Discord Bot Setup
 
