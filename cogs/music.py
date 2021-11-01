@@ -85,10 +85,25 @@ class AutoPlay:
         # self.auto_play_flag = self.queue["auto_play_flag"]
 
     async def play_(self, ctx, data):
-        try:
-            current_song = data['title']
-        except TypeError:
-            current_song = data.title
+        if type(data) == dict:
+            print("you used play")
+            print(data)
+            print(type(data))
+            video = VideoData(data)    # hol up, it's object anyways?
+        else:
+            print("you used queue")
+            video = data
+            print(type(video))
+        # DataIsObject = False
+        # if type(data) == dict:  # play passes dict
+        #     current_song = data['title']
+        # elif type(data) == object:  # queue passes object
+        current_song = video.title
+        #     DataIsObject = True
+        # else:
+        #     print(type(data))
+        #     print(data)
+
         queue = VideoQueue()
 
         server = self.server_id  # the server where the command is sent
@@ -100,8 +115,12 @@ class AutoPlay:
             pass
 
         async with ctx.typing():
-            video = VideoQueueItem(VideoData(data))  # downloading, classes are troublesome
+            # if not DataIsObject:
+            video = VideoQueueItem(video)  # hol up, it's object anyways?
             await video.download()
+            # elif DataIsObject:
+            #     video = VideoQueueItem(data)
+            #     await video.download()
 
             voice_channel.play(discord.FFmpegOpusAudio(ytdl.prepare_filename(data)))  # play_ song
 
@@ -119,10 +138,11 @@ class AutoPlay:
 
             await ctx.send(f"**Now playing:** {current_song}")
 
-    async def play_next(self, ctx, songData):
+    async def play_next(self, ctx, songObject):
         """check if song is still playing, if not, play_ next and delete file. Try catch for when bot disconnects"""
-        await self.play_(ctx, songData)
-        file_name = ytdl.prepare_filename(songData)
+        print(songObject)
+        await self.play_(ctx, songObject)
+        file_name = ytdl.prepare_filename(songObject)
         await self.delete_audio_file(ctx, file_name)
         queue = VideoQueue().displayQueue(ctx.message.guild.id)
         flag = queue["auto_play_flag"]
