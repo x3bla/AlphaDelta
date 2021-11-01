@@ -84,16 +84,17 @@ class AutoPlay:
         # self.loop = self.queue["loop"]
         # self.auto_play_flag = self.queue["auto_play_flag"]
 
-    async def play_(self, ctx, data):
+    async def play_(self, ctx, data, file_name):
         if type(data) == dict:
             print("you used play")
-            print(data)
-            print(type(data))
+            print(type(data))  # <cogs.music.VideoData object at 0x00000260AB2B6910> <class 'cogs.music.VideoData'>
             video = VideoData(data)    # hol up, it's object anyways?
+            print(video)
+            print(type(video))
         else:
             print("you used queue")
-            video = data
-            print(type(video))
+            video = data  # <cogs.music.VideoData object at 0x00000260AAB69280>
+            print(video)
         # DataIsObject = False
         # if type(data) == dict:  # play passes dict
         #     current_song = data['title']
@@ -122,7 +123,7 @@ class AutoPlay:
             #     video = VideoQueueItem(data)
             #     await video.download()
 
-            voice_channel.play(discord.FFmpegOpusAudio(ytdl.prepare_filename(data)))  # play_ song
+            voice_channel.play(discord.FFmpegOpusAudio(file_name))  # play_ song
 
             try:  # if there's no queue, ignore loop
                 loop = queue.displayQueue(server)
@@ -140,26 +141,26 @@ class AutoPlay:
 
     async def play_next(self, ctx, songObject):
         """check if song is still playing, if not, play_ next and delete file. Try catch for when bot disconnects"""
-        print(songObject)
-        await self.play_(ctx, songObject)
+        # print(songObject)
         file_name = ytdl.prepare_filename(songObject)
+        await self.play_(ctx, songObject, file_name)
         await self.delete_audio_file(ctx, file_name)
         queue = VideoQueue().displayQueue(ctx.message.guild.id)
         flag = queue["auto_play_flag"]
 
         while flag:
             await asyncio.sleep(10)
-            try:
-                while ctx.message.guild.voice_client.is_playing():
-                    await asyncio.sleep(2)
-                    print("play_")
-                    pass
+            # try:
+            while ctx.message.guild.voice_client.is_playing():
                 await asyncio.sleep(2)
-                print("plong")
-                await self.play_(ctx, queue["song"][0])  # play_ next song on list
-            except AttributeError:
-                await asyncio.sleep(2)
-                await self.play_(ctx, queue["song"][0])  # play_ next song on list
+                print("play_")
+                pass
+            await asyncio.sleep(2)
+            print("plong")
+            await self.play_(ctx, queue["song"][0], file_name)  # play_ next song on list
+            # except AttributeError:
+            #     await asyncio.sleep(2)
+            #     await self.play_(ctx, queue["song"][0], file_name)  # play_ next song on list
 
     @staticmethod
     async def delete_audio_file(ctx, file_name):
@@ -228,16 +229,13 @@ class Music(commands.Cog):
 
         if title.lower() == "queue" or title.lower() == "q":
             data = queue.displayQueue(server)
-            print("as intended")
             print(data["song"][0])
             await AutoPlay(server).play_next(ctx, data["song"][0])
             return
-        print("fuck, it skipped")
 
         try:
-            print(data)
             await AutoPlay(server).play_next(ctx, data)
-        except FileExistsError:
+        except FileNotFoundError:
             await ctx.send("file's too big ya cunt")
 
         try:
@@ -277,7 +275,7 @@ class Music(commands.Cog):
             await ctx.send("There is no song to skip")
 
     @commands.command
-    async  def shuffle(self, ctx):
+    async def shuffle(self, ctx):
         raise NotImplementedError
 
     @commands.command(name="queue", aliases=['q'])
@@ -316,12 +314,12 @@ class Music(commands.Cog):
         try:
             server = ctx.message.guild.id
             queue_ = VideoQueue().displayQueue(server)["song"]
-            queue = ""
+            queue = str()
             num = 0
             for x in queue_:
                 num += 1
                 title = x.title
-                queue = str(num) + ". " + title + "\n"  # 1. song_title\n
+                queue = queue + str(num) + ". " + title + "\n"  # 1. song_title\n
             await ctx.send(f"`{queue}`")
             print("done")
         except KeyError:
