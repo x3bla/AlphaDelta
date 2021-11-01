@@ -11,6 +11,8 @@ ytdlp_format_options = {  # sets the quality of the audio
     'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
     'restrictfilenames': True,
     'noplaylist': False,
+    'ignoreerrors': False,
+    # 'logtostderr': False,
     # 'concurrent_fragment_downloads': 5,
     'max_filesize': 5000000,  # 5MB bytes
     'quiet': True,
@@ -95,15 +97,7 @@ class AutoPlay:
             print("you used queue")
             video = data  # <cogs.music.VideoData object at 0x00000260AAB69280>
             print(video)
-        # DataIsObject = False
-        # if type(data) == dict:  # play passes dict
-        #     current_song = data['title']
-        # elif type(data) == object:  # queue passes object
         current_song = video.title
-        #     DataIsObject = True
-        # else:
-        #     print(type(data))
-        #     print(data)
 
         queue = VideoQueue()
 
@@ -116,12 +110,8 @@ class AutoPlay:
             pass
 
         async with ctx.typing():
-            # if not DataIsObject:
             video = VideoQueueItem(video)  # hol up, it's object anyways?
             await video.download()
-            # elif DataIsObject:
-            #     video = VideoQueueItem(data)
-            #     await video.download()
 
             voice_channel.play(discord.FFmpegOpusAudio(file_name))  # play_ song
 
@@ -132,35 +122,34 @@ class AutoPlay:
             except KeyError:
                 pass
 
-            # try:  # song might not be in queue
-            #     await queue.removeVideo(server, 0)  # removing first video from list since it's playing
-            # except KeyError:
-            #     pass
-
             await ctx.send(f"**Now playing:** {current_song}")
 
     async def play_next(self, ctx, songObject):
         """check if song is still playing, if not, play_ next and delete file. Try catch for when bot disconnects"""
         # print(songObject)
+        print(songObject)
         file_name = ytdl.prepare_filename(songObject)
         await self.play_(ctx, songObject, file_name)
         await self.delete_audio_file(ctx, file_name)
         queue = VideoQueue().displayQueue(ctx.message.guild.id)
         flag = queue["auto_play_flag"]
+        print(flag)
 
         while flag:
-            await asyncio.sleep(10)
-            # try:
             while ctx.message.guild.voice_client.is_playing():
                 await asyncio.sleep(2)
                 print("play_")
                 pass
-            await asyncio.sleep(2)
             print("plong")
-            await self.play_(ctx, queue["song"][0], file_name)  # play_ next song on list
-            # except AttributeError:
-            #     await asyncio.sleep(2)
-            #     await self.play_(ctx, queue["song"][0], file_name)  # play_ next song on list
+            del(queue["song"][0])  # song's played, so, YEET
+            if queue["song"][0]:
+                print("AUTOPLAY WOOOO")
+                song_data = await getVideoData(queue["song"][0])
+                file_name = ytdl.prepare_filename(song_data)
+                await self.play_(ctx, song_data, file_name)  # play_ next song on list
+            else:
+                print(False)
+                queue["auto_play_flag"] = False
 
     @staticmethod
     async def delete_audio_file(ctx, file_name):
@@ -169,10 +158,8 @@ class AutoPlay:
             try:
                 while ctx.message.guild.voice_client.is_playing():
                     await asyncio.sleep(2)
-                    print("ping")
                     pass
                 await asyncio.sleep(2)
-                print("pong")
                 os.remove(file_name)
                 print(file_name)
                 break
@@ -229,14 +216,20 @@ class Music(commands.Cog):
 
         if title.lower() == "queue" or title.lower() == "q":
             data = queue.displayQueue(server)
-            print(data["song"][0])
-            await AutoPlay(server).play_next(ctx, data["song"][0])
+            data["auto_play_flag"] = True
+            song_title = data["song"][0]
+            song_data = await getVideoData(song_title)
+            # print(song_data)
+            await AutoPlay(server).play_next(ctx, song_data)
             return
 
         try:
+            # print(data)
             await AutoPlay(server).play_next(ctx, data)
         except FileNotFoundError:
             await ctx.send("file's too big ya cunt")
+        except KeyError:
+            pass  # if there's no queue, this will be triggered
 
         try:
             if queue.displayQueue(server):  # if queue exists, enable auto play_
@@ -283,7 +276,8 @@ class Music(commands.Cog):
 
         song_data = VideoData(await getVideoData(search))
         server = ctx.message.guild.id
-        VideoQueue().addVideo(server, song_data)
+        print(song_data)
+        VideoQueue().addVideo(server, song_data.title)
 
         await ctx.send(f"`{song_data.title}` added to queue")
 
@@ -314,11 +308,11 @@ class Music(commands.Cog):
         try:
             server = ctx.message.guild.id
             queue_ = VideoQueue().displayQueue(server)["song"]
-            queue = str()
+            queue = ''
             num = 0
             for x in queue_:
                 num += 1
-                title = x.title
+                title = x
                 queue = queue + str(num) + ". " + title + "\n"  # 1. song_title\n
             await ctx.send(f"`{queue}`")
             print("done")
