@@ -31,7 +31,7 @@ For the bot to work 100%, you need to FFmpeg and add the bin folder to path, yt-
 PyNaCl:
 type this in a administrator command line or the terminal of pycharm:
 
-`python3 -m pip install -U discord.py[voice]`
+`pip install -U discord.py[voice]`
 
 Youtube-dl:
 
