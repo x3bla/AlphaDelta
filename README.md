@@ -33,7 +33,7 @@ type this in a administrator command line or the terminal of pycharm:
 
 `pip install -U discord.py[voice]`
 
-Youtube-dl:
+Yt-dlp:
 
 `pip install yt-dlp`
 
