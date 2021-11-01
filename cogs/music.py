@@ -65,7 +65,7 @@ class VideoQueue:  # a queue for each server
             self.queue[server] = {  # { server_key: {"loop": False, "auto_play_flag": False, "song": ["song_name"]}}
                 "loop": False,
                 "auto_play_flag": False,
-                "song": [videoData]
+                "song": [videoData]  # <cogs.music.VideoData object at 0x000002446BAD1640> isn't workable with
             }
 
         else:
@@ -255,6 +255,10 @@ class Music(commands.Cog):
             await ctx.send("Feature not implemented, ping my creator")
         except discord.VoiceClient:
             await ctx.send("There is no song to skip")
+
+    @commands.command
+    async  def shuffle(self, ctx):
+        raise NotImplementedError
 
     @commands.command(name="queue", aliases=['q'])
     async def queue_(self, ctx, *, search):
