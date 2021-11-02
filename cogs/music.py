@@ -65,10 +65,10 @@ class VideoQueue:  # a queue for each server
 
     def addVideo(self, server, videoData):
         if server not in self.queue:  # if the key "server's name" does not exist, create it.
-            self.queue[server] = {  # { server_key: {"loop": False, "auto_play_flag": False, "song": ["song_name"]}}
+            self.queue[server] = {
                 "loop": False,
                 "auto_play_flag": False,
-                "song": [videoData]  # <cogs.music.VideoData object at 0x000002446BAD1640> isn't workable with
+                "song": [videoData]
             }
 
         else:
@@ -84,8 +84,6 @@ class AutoPlay:
 
     def __init__(self, server_id):
         self.server_id = server_id
-        # self.loop = self.queue["loop"]
-        # self.auto_play_flag = self.queue["auto_play_flag"]
 
     async def play_(self, ctx, data, file_name):
         if type(data) == dict:
@@ -105,7 +103,7 @@ class AutoPlay:
             pass
 
         async with ctx.typing():
-            video = VideoQueueItem(video)  # hol up, it's object anyways?
+            video = VideoQueueItem(video)
             await video.download()
 
             voice_channel.play(discord.FFmpegOpusAudio(file_name))  # play_ song
@@ -129,7 +127,7 @@ class AutoPlay:
 
         while flag:
             while ctx.message.guild.voice_client.is_playing():
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
                 pass
             del(queue["song"][0])  # song's played, so, YEET
             if queue["song"][0]:
@@ -237,7 +235,7 @@ class Music(commands.Cog):
 
     @commands.command(aliases=['s'])
     async def skip(self, ctx):
-        voice_channel = ctx.message.guild.voice_client
+        # voice_channel = ctx.message.guild.voice_client
 
         try:
             await ctx.send("Feature not implemented, ping my creator")
@@ -301,7 +299,7 @@ class Music(commands.Cog):
                 await ctx.send("your **queue** is empty")
             else:
                 await ctx.send(f"`{queue}`")
-            print("done")
+            print("list shown")
         except KeyError:
             await ctx.send("The queue is empty")
 
