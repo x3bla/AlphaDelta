@@ -40,14 +40,14 @@ def RPS_logic(p1, p2):
     return "bot"
 
 
-class Expand1(commands.Cog):
+class Misc1(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Expansion 1 is loaded")
+        print("Misc 1 is loaded")
 
     # commands starts here
     @commands.command()
@@ -118,4 +118,4 @@ class Expand1(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Expand1(bot))
+    bot.add_cog(Misc1(bot))
