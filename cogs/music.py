@@ -4,7 +4,7 @@ import yt_dlp
 import asyncio
 import os
 
-yt_dlp.utils.bug_reports_message = lambda: ''
+yt_dlp.utils.bug_reports_message = lambda: ''  # no idea what this does
 
 # https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
 ytdlp_format_options = {  # sets the quality of the audio
@@ -12,8 +12,8 @@ ytdlp_format_options = {  # sets the quality of the audio
     'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
     'restrictfilenames': True,
     'noplaylist': False,
-    'ignoreerrors': False,
-    # 'logtostderr': False,
+    'ignoreerrors': True,
+    'logtostderr': False,
     # 'concurrent_fragment_downloads': 5,
     'max_filesize': 5000000,  # 5MB bytes
     'quiet': True,
@@ -68,6 +68,7 @@ class VideoQueue:  # a queue for each server
             self.queue[server] = {
                 "loop": False,
                 "auto_play_flag": False,
+                "shuffle": False,
                 "song": [videoData]
             }
 
@@ -111,31 +112,41 @@ class AutoPlay:
             try:  # if there's no queue, ignore loop
                 loop = queue.displayQueue(server)
                 if loop[server]["loop"]:
-                    queue.addVideo(server, data)  # adding back into the queue if loop is True
+                    queue.addVideo(server, current_song)  # adding back into the queue if loop is True
             except KeyError:
                 pass
 
-            await ctx.send(f"**Now playing:** {current_song}")
+            await ctx.send(f"**Now playing: ** {current_song}")
 
     async def play_next(self, ctx, songObject):
         """check if song is still playing, if not, play_ next and delete file. Try catch for when bot disconnects"""
         file_name = ytdl.prepare_filename(songObject)
         await self.play_(ctx, songObject, file_name)
         await self.delete_audio_file(ctx, file_name)
+
         queue = VideoQueue().displayQueue(ctx.message.guild.id)
         flag = queue["auto_play_flag"]
 
         while flag:
-            while ctx.message.guild.voice_client.is_playing():
-                await asyncio.sleep(1)
+            try:  # when bot leaves while playing, pass the error
+                while ctx.message.guild.voice_client.is_playing():
+                    pass
+            except AttributeError:
                 pass
+
             del(queue["song"][0])  # song's played, so, YEET
+
+            if not queue["song"]:  # when the queue is empty, break
+                break
+
             if queue["song"][0]:
                 song_data = await getVideoData(queue["song"][0])
                 file_name = ytdl.prepare_filename(song_data)
                 await self.play_(ctx, song_data, file_name)  # play_ next song on list
+                await self.delete_audio_file(ctx, file_name)
             else:
                 queue["auto_play_flag"] = False
+                break
 
     @staticmethod
     async def delete_audio_file(ctx, file_name):
@@ -149,8 +160,8 @@ class AutoPlay:
                 os.remove(file_name)
                 break
             except AttributeError:
-                await asyncio.sleep(2)
                 os.remove(file_name)
+                break
 
 
 class Music(commands.Cog):
@@ -196,28 +207,26 @@ class Music(commands.Cog):
 
         server = ctx.message.guild.id
         queue = VideoQueue()
-        data = await getVideoData(title)  # getting all of the data beforehand, song title, id, etc
-
-        if title.lower() == "queue" or title.lower() == "q":
-            data = queue.displayQueue(server)
-            data["auto_play_flag"] = True
-            song_title = data["song"][0]
-            song_data = await getVideoData(song_title)
-            # print(song_data)
-            await AutoPlay(server).play_next(ctx, song_data)
-            return
-
-        try:
-            # print(data)
-            await AutoPlay(server).play_next(ctx, data)
-        except KeyError:
-            pass  # if there's no queue, this will be triggered
 
         try:
             if queue.displayQueue(server):  # if queue exists, enable auto play_
                 queue.queue[server]["auto_play_flag"] = True
         except KeyError:
             pass
+
+        if title.lower() == "queue" or title.lower() == "q":
+            data = queue.displayQueue(server)
+            data["auto_play_flag"] = True  # enables auto play
+            song_title = data["song"][0]  # changes song data from search title to first item in queue
+            song_data = await getVideoData(song_title)
+            await AutoPlay(server).play_next(ctx, song_data)
+            return
+
+        try:
+            data = await getVideoData(title)  # getting all of the data, song title, id, etc
+            await AutoPlay(server).play_next(ctx, data)
+        except KeyError:
+            pass  # if there's no queue, this will be triggered
 
     @commands.command(aliases=["stop"])
     async def pause(self, ctx):
@@ -235,21 +244,18 @@ class Music(commands.Cog):
 
     @commands.command(aliases=['s'])
     async def skip(self, ctx):
-        # voice_channel = ctx.message.guild.voice_client
+        voice_channel = ctx.message.guild.voice_client
 
         try:
-            await ctx.send("Feature not implemented, ping my creator")
-            raise NotImplementedError
-            # voice_channel.stop()
+            voice_channel.stop()
+            await ctx.send("**skipping...**")
 
-            # async with ctx.typing():
-            #   call AutoPlay
-            # await ctx.send(f"**Now playing:** {ctx}")
         except discord.VoiceClient:
             await ctx.send("There is no song to skip")
 
     @commands.command
     async def shuffle(self, ctx):
+        await ctx.send("Feature not implemented, ping my creator")
         raise NotImplementedError
 
     @commands.command(name="queue", aliases=['q'])
@@ -273,15 +279,18 @@ class Music(commands.Cog):
         songIndex = int(songIndex) - 1  # -1 cuz index starts at 0
 
         await VideoQueue().removeVideo(server, songIndex)
-        queue = VideoQueue().displayQueue(server)  # retrieving queue from class
+        try:
+            pass
+        except KeyError:
+            await ctx.send(f"{ctx.author.mention} Your queue is empty or you gave a invalid number")
 
         # TODO: prepare embed here
-
+        queue = VideoQueue().displayQueue(server)  # retrieving queue from class
         await ctx.send(f"Your queue is now `{queue}`")
 
     @remove.error
     async def remove_error(self, ctx, error):  # even if unused, error variable is received
-        await ctx.send(f"{ctx.author.mention} Your queue is empty or you gave a invalid number")
+        await ctx.send("error")
         print(error)
 
     @commands.command(aliases=['v', "list"])
@@ -295,7 +304,7 @@ class Music(commands.Cog):
                 num += 1
                 title = x
                 queue = queue + str(num) + ". " + title + "\n"  # 1. song_title\n
-            if queue == "``":
+            if queue.strip() == "``":
                 await ctx.send("your **queue** is empty")
             else:
                 await ctx.send(f"`{queue}`")
