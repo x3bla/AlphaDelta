@@ -21,7 +21,7 @@ class VideoQueue:  # a queue for each server
     def __init__(self):
         self.queue = []
 
-    # def displayQueue(self, server):
+    # def getServerQueue(self, server):
     #     return self.bot[server]
 
     def addVideo(self, server, videoTitle):
