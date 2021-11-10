@@ -29,13 +29,11 @@ For the bot to work 100%, you need to FFmpeg and add the bin folder to path, yt-
 ## Python libraries Installation
 
 PyNaCl:
-type this in a administrator command line or the terminal of pycharm:
+type this in a administrator command line inside of your virtual environment
 
-`pip install -U discord.py[voice]`
+`pip install -r requirements.txt`
 
-Yt-dlp:
-
-`pip install yt-dlp`
+if you still have no idea what to do or it doesn't work, just go into requirements.txt and pip install the libraries yourself
 
 ## Discord Bot Setup
 
