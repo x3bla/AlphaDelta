@@ -43,16 +43,15 @@ looping = False
 def getServerQueue(server):  # too lazy to remove
     return queue[server]
 
-def addVideo(server, videoData):
-    queue[server]["song"].append(videoData)
-    print(queue, "\n")
+def addVideo(server, song_title, duration):
+    queue[server]["song"].append(song_title)
+    queue[server]["duration"].append(duration)
 
 def createServerQueue(server):
     queue[server] = {
         "loop": False,
         "auto_play_flag": False,
         "song": [],
-        "duration": []
     }
 
 async def removeVideo(server, videoItem: int):
@@ -93,14 +92,12 @@ class VideoQueueItem:  # download the video
 class AutoPlay:
     """handles everything related to playing audio"""
 
-    def __init__(self, server_id):
-        self.server_id = server_id
+    @staticmethod
+    async def _play(ctx, data, file_name):
+        video = VideoData(data)  # Type 'VideoData' doesn't have expected attribute '__getitem__'
+        current_song = video.title  # need to turn it to object here
+        # screw my life, it'll be better if I rewrote this whole thing since I can't use classes like I thought
 
-    async def play_(self, ctx, data, file_name):
-        video = VideoData(data)  # you have to convert to object here or some attributes go poof idk why
-        current_song = video.title
-
-        server = self.server_id  # the server where the command is sent
         voice_channel = ctx.message.guild.voice_client  # the voice channel of the user who sent the command
 
         try:  # try to stop current song to play new song
@@ -114,22 +111,19 @@ class AutoPlay:
 
             voice_channel.play(discord.FFmpegOpusAudio(file_name))  # play song
 
-            serverQueue = getServerQueue(server)
-            if serverQueue["loop"]:
-                addVideo(server, current_song)  # adding back into the queue if loop is True
-
             await ctx.send(f"**Now playing: ** {current_song}")
 
-    async def play_next(self, ctx, songObject):
-        """check if song is still playing, if not, play_ next and delete file. Try catch for when bot disconnects"""
+    async def play_next(self, ctx, song_data):
+        """check if song is still playing, if not, _play next and delete file. Try catch for when bot disconnects"""
         global looping
 
-        file_name = ytdl.prepare_filename(songObject)
-        await self.play_(ctx, songObject, file_name)  # maybe try catch
-        await self.delete_audio_file(ctx, file_name)
-
-        serverQueue = getServerQueue(ctx.message.guild.id)  # getting server
+        server = ctx.message.guild.id
+        serverQueue = getServerQueue(server)  # getting server
         flag = serverQueue["auto_play_flag"]
+
+        file_name = ytdl.prepare_filename(song_data)
+        await self._play(ctx, song_data, file_name)  # BUG: if bot leaves before playing, audio file is stuck open
+        await self.delete_audio_file(ctx, file_name)
 
         print("triggering autoplay")
         while flag:
@@ -142,18 +136,33 @@ class AutoPlay:
                 print("passing")
                 pass
 
-            del(serverQueue["song"][0])  # song's played, so, YEET
-            del(serverQueue["duration"][0])
+            try:  # if not in queue, pass
+                song_index = serverQueue["song"].index([song_data["title"], song_data["duration"]])
+                del(serverQueue["song"][song_index])  # song's played, so, YEET
+            except ValueError:
+                pass
+
             if not serverQueue["song"]:  # when the queue is empty, break
                 serverQueue["auto_play_flag"] = False
                 looping = False  # this variable is temp
                 break
 
-            song_data = await getVideoData(serverQueue["song"][0])
+            try:
+                ctx.message.guild.voice_client.is_playing()
+            except AttributeError:
+                break
+
+            song_data = await getVideoData(serverQueue["song"][0][0])
             file_name = ytdl.prepare_filename(song_data)
-            await self.play_(ctx, song_data, file_name)  # play_ next song on list
+            await self._play(ctx, song_data, file_name)  # _play next song on list
             await self.delete_audio_file(ctx, file_name)
+
+            current_song = song_data["title"]
+            if serverQueue["loop"]:
+                duration = serverQueue["duration"][0]
+                addVideo(server, current_song, duration)  # adding back into the queue if loop is True
             print("deleted", file_name)
+            looping = False
 
     @staticmethod
     async def delete_audio_file(ctx, file_name):
@@ -167,11 +176,14 @@ class AutoPlay:
                 os.remove(file_name)
                 break
             except AttributeError:
-                await asyncio.sleep(2)  # if the bot leaves after joining instantly, need delay to remove audio
-                os.remove(file_name)  # TODO: problem, process is still being used so can't remove
+                while True:  # if the bot leaves after joining instantly, need delay to remove audio
+                    try:
+                        os.remove(file_name)
+                        break
+                    except PermissionError:
+                        await asyncio.sleep(60)
                 break
 
-# Hadrik Hardfall
 class Music(commands.Cog):
 
     def __init__(self, bot):
@@ -200,7 +212,6 @@ class Music(commands.Cog):
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, title):
-
         if not ctx.message.author.voice:
             await ctx.send("You are not connected to a voice channel")
             return
@@ -212,24 +223,26 @@ class Music(commands.Cog):
         except discord.ClientException:
             pass
 
-        server = ctx.message.guild.id
-        serverQueue = getServerQueue(server)
+        if ":" in title:
+            title = title.replace(":", "")
 
+        server = ctx.message.guild.id
         if server not in queue:  # i need this cuz dict KeyError. Might have to change the way auto play works
             createServerQueue(server)
+        serverQueue = getServerQueue(server)
 
         if serverQueue["song"]:  # if queue exists, enable auto play
             serverQueue["auto_play_flag"] = True
 
         if title.lower() == "queue" or title.lower() == "q":
-            song_title = serverQueue["song"][0]  # changes song data from search title to first item in queue
+            song_title = serverQueue["song"][0][0]  # changes song data from search title to first item in queue
             song_data = await getVideoData(song_title)
-            await AutoPlay(server).play_next(ctx, song_data)
+            await AutoPlay().play_next(ctx, song_data)
             return
 
         try:
             data = await getVideoData(title)  # getting all of the data, song title, id, etc
-            await AutoPlay(server).play_next(ctx, data)
+            await AutoPlay().play_next(ctx, data)
         except KeyError:
             pass  # if there's no queue, this will be triggered
 
@@ -260,7 +273,6 @@ class Music(commands.Cog):
 
         if serverQueue["song"]:  # if there's another song to play, play
             serverQueue["auto_play_flag"] = True
-            await self.play("queue")
         else:
             await ctx.send("there's no song in the queue to play")
 
@@ -275,7 +287,10 @@ class Music(commands.Cog):
         random.shuffle(serverQueue["song"])
 
     @commands.command(name="queue", aliases=['q'])
-    async def queue_(self, ctx, *, search):
+    async def queue_(self, ctx, *, search=None):
+        if search is None:
+            await ctx.send("You need to include the song that you want to queue `!queue song`")
+            return
 
         song_data = VideoData(await getVideoData(search))
         server = ctx.message.guild.id
@@ -284,36 +299,25 @@ class Music(commands.Cog):
         if server not in queue:  # if the key "server's name" does not exist, create it.
             createServerQueue(server)
 
+        serverQueue = getServerQueue(server)
         print(song_data, ctx.message.author)
-        queue[server]["song"].append(song_title)
-        queue[server]["duration"].append(song_data.duration)
+        serverQueue["song"].append([song_title, song_data.duration])
         print(queue, "\n")
 
         await ctx.send(f"`{song_title}` added to queue")
-
-    @queue_.error
-    async def queue_error(self, ctx, error):
-        await ctx.send("You need to include the song that you want to queue `!queue song`")
-        print(error)
 
     @commands.command(aliases=['r'])
     async def remove(self, ctx, songIndex):
         server = ctx.message.guild.id
         songIndex = int(songIndex) - 1  # -1 cuz index starts at 0
 
-        await removeVideo(server, songIndex)
         try:
-            pass
+            await removeVideo(server, songIndex)
         except KeyError:
             await ctx.send(f"{ctx.author.mention} Your queue is empty or you gave a invalid number")
 
         queue_ = getServerQueue(server)  # retrieving queue from class
-        await ctx.send(f"Your queue is now `{queue_}`")
-
-    @remove.error
-    async def remove_error(self, ctx, error):  # even if unused, error variable is received
-        await ctx.send("error")
-        print(error)
+        await ctx.send(f"Your queue is now `{queue_}`")  # TODO: discord embeds
 
     @commands.command(aliases=['v', "list"])
     async def view(self, ctx):
@@ -327,16 +331,15 @@ class Music(commands.Cog):
             return
 
         serverQueue = getServerQueue(server)
-        duration = serverQueue["duration"]
         vidQueue = ''
         num = 0
 
-        print(duration[0])
-        for title in serverQueue["song"]:  # TODO: discord embeds
-            minutes = duration[num] // 60
-            seconds = duration[num] % 60
+        for song in serverQueue["song"]:  # TODO: discord embeds
+            print(num)
+            minutes = song[1] // 60  # song = ["title", duration]
+            seconds = song[1] % 60
             num += 1  # 1. title 2:10
-            vidQueue = vidQueue+str(num)+". "+title+" "+str(minutes)+":"+str(seconds)+"\n"
+            vidQueue = vidQueue+str(num)+". "+song[0]+" "+str(minutes)+":"+str(seconds)+"\n"
         if num == 0:
             await ctx.send("your queue is empty")
         else:
@@ -344,13 +347,11 @@ class Music(commands.Cog):
 
     @commands.command(aliases=['l'])
     async def leave(self, ctx):
-        voice_client = ctx.message.guild.voice_client
-        await voice_client.disconnect()
-        await ctx.send("Bye!")
-
-    @leave.error
-    async def leave_error(self, ctx, error):
-        if isinstance(error, commands.CommandInvokeError):
+        if self.bot.is_connected():
+            voice_client = ctx.message.guild.voice_client
+            await voice_client.disconnect()
+            await ctx.send("Bye!")
+        else:
             await ctx.send("But I'm not in a voice channel?")
 
     @commands.command(aliases=["var", "vars"])
