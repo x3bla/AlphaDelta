@@ -44,8 +44,7 @@ def getServerQueue(server):  # too lazy to remove
     return queue[server]
 
 def addVideo(server, song_title, duration):
-    queue[server]["song"].append(song_title)
-    queue[server]["duration"].append(duration)
+    queue[server]["song"].append([song_title, duration])
 
 def createServerQueue(server):
     queue[server] = {
