@@ -151,6 +151,11 @@ class AutoPlay:
                 print("passing")
                 pass
 
+            current_song = song_data["title"]
+            if serverQueue["loop"]:
+                duration = song_data["duration"]
+                addVideo(server, current_song, duration)  # adding back into the queue if loop is True
+
             try:  # if not in queue, pass
                 song_index = serverQueue["song"].index([song_data["title"], song_data["duration"]])
                 del(serverQueue["song"][song_index])  # song's played, so, YEET
@@ -172,10 +177,6 @@ class AutoPlay:
             await self._play(ctx, song_data, file_name)  # _play next song on list
             await self.delete_audio_file(ctx, file_name)
 
-            current_song = song_data["title"]
-            if serverQueue["loop"]:
-                duration = serverQueue["duration"][0]
-                addVideo(server, current_song, duration)  # adding back into the queue if loop is True
             print("deleted", file_name)
             looping = False
 

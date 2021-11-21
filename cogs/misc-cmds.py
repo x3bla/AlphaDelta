@@ -4,6 +4,7 @@ import random
 
 # lists
 die = ["Pls no, I can do so much more", "Why have you brought my life to an end", "I still haven't had a family"]
+rps = ["rock", "stone", "paper", "cloth", "scissor", "scissors"]
 
 # not safe
 # def mathBreakUp(expression):
@@ -12,32 +13,33 @@ die = ["Pls no, I can do so much more", "Why have you brought my life to an end"
 #     print(eval(expression))
 #     return eval(expression)
 
-def RPS_logic(p1, p2):
+def RPS_logic(p1, bot):
+    if p1 not in rps:
+        return False
     if p1.lower() == "rock" or p1.lower() == "stone":  # changing string to int to prevent spam
         p1 = 1
     elif p1.lower() == "paper" or p1.lower() == "cloth":
         p1 = 2
     elif p1.lower() == "scissor" or p1.lower() == "scissors":
         p1 = 3
-    if p1 == p2:
+    if p1 == bot:
         return "both"
 
     if p1 == 3:  # scissors
-        if p2 == 2:  # paper
+        if bot == 2:  # paper
             return "player"  # 1=rock 2=paper 3=scissors
         else:
             return "bot"
     if p1 == 2:  # paper
-        if p2 == 1:  # rock
+        if bot == 1:  # rock
             return "player"
         else:
             return "bot"
     if p1 == 2:  # paper
-        if p2 == 3:  # scissors
+        if bot == 3:  # scissors
             return "player"
         else:
             return "bot"
-    return "bot"
 
 
 class Misc1(commands.Cog):
