@@ -134,16 +134,20 @@ class AutoPlay:
         server = ctx.message.guild.id
         serverQueue = getServerQueue(server)  # getting server
         flag = serverQueue["auto_play_flag"]
-
-        file_name = ytdl.prepare_filename(song_data)
-        await self._play(ctx, song_data, file_name)  # BUG: if bot leaves before playing, audio file is stuck open
-        await self.delete_audio_file(ctx, file_name)
+        discordBot = ctx.message.guild.voice_client
+        autoplay = True
 
         print("triggering autoplay")
-        while flag:
+        while autoplay:
             looping = True  # temp variable
+
+            if flag:
+                pass
+            else:
+                autoplay = False
+
             try:  # when bot leaves while playing, pass the error
-                while ctx.message.guild.voice_client.is_playing():
+                while discordBot.is_playing() or discordBot.is_paused():
                     await asyncio.sleep(2)
                     pass
             except AttributeError:

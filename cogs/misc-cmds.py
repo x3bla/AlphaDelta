@@ -5,6 +5,9 @@ import random
 # lists
 die = ["Pls no, I can do so much more", "Why have you brought my life to an end", "I still haven't had a family"]
 rps = ["rock", "stone", "paper", "cloth", "scissor", "scissors"]
+mindbreak = []
+with open("MindBreak.txt", "r") as f:
+    mindbreak = f.split()
 
 # not safe
 # def mathBreakUp(expression):
@@ -117,6 +120,10 @@ class Misc1(commands.Cog):
     async def RandomNumber(self, ctx, range1, range2):
         RanNum = random.randint(int(range1), int(range2))
         await ctx.send(RanNum)
+
+    @commands.command(aliases=["uhh"])
+    async def MindBreak(self, ctx):
+        await ctx.send(random.choice(mindBreak))
 
 
 def setup(bot):
