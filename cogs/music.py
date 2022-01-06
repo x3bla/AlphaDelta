@@ -28,6 +28,7 @@ ytdlp_format_options = {  # sets the quality of the audio
     'noplaylist': False,
     'ignoreerrors': True,
     'logtostderr': False,
+    'cookiefile': "./Cookies",
     # 'concurrent_fragment_downloads': 5,  # parallel downloading, if needed
     # 'max_filesize': 5000000,  # 5MB bytes | look at getVideoData
     'quiet': True,
@@ -134,10 +135,13 @@ class AutoPlay:
         server = ctx.message.guild.id
         serverQueue = getServerQueue(server)  # getting server
         flag = serverQueue["auto_play_flag"]
+
+        file_name = ytdl.prepare_filename(song_data)
+        await self._play(ctx, song_data, file_name)  # BUG: if bot leaves before playing, audio file is stuck open
+        await self.delete_audio_file(ctx, file_name)
+
         discordBot = ctx.message.guild.voice_client
         autoplay = True
-
-        print("triggering autoplay")
         while autoplay:
             looping = True  # temp variable
 
@@ -154,6 +158,7 @@ class AutoPlay:
                 print("passing")
                 pass
 
+            print("triggering autoplay")
             current_song = song_data["title"]
             if serverQueue["loop"]:
                 duration = song_data["duration"]
@@ -236,11 +241,11 @@ class Music(commands.Cog):
             return
 
         elif title is None:
-            await ctx.send("You need to type in a song or a url with `!play ")
+            await ctx.send("You need to type in a song or a url with `!play song`")
             return
 
         elif "playlist?" in title:
-            await ctx.send("For playlists, use the `!queue` command instead")
+            await ctx.send("For playlists, use the `!queue` command instead (not implemented ping my creator)")
             return
 
         else:
