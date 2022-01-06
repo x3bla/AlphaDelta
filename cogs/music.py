@@ -28,7 +28,7 @@ ytdlp_format_options = {  # sets the quality of the audio
     'noplaylist': False,
     'ignoreerrors': True,
     'logtostderr': False,
-    'cookiefile': "./Cookies",
+    # 'cookiefile': "./Cookies",
     # 'concurrent_fragment_downloads': 5,  # parallel downloading, if needed
     # 'max_filesize': 5000000,  # 5MB bytes | look at getVideoData
     'quiet': True,
