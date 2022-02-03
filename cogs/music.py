@@ -309,7 +309,7 @@ class Music(commands.Cog):
             await ctx.send("There is no song to skip")
 
         if serverQueue["song"]:  # if there's another song to play, play
-            serverQueue["auto_play_flag"] = True
+            serverQueue["auto_play_flag"] = True  # TODO: check if this is needed
         else:
             await ctx.send("there's no song in the queue to play")
 
@@ -325,7 +325,7 @@ class Music(commands.Cog):
         await ctx.send("**Shuffled** :twisted_rightwards_arrows:")
 
     @commands.command(name="queue", aliases=['q'])
-    async def queue_(self, ctx, *, search=None):
+    async def queue_(self, ctx, *, search=None):  # TODO: merge with play, make queue display the queue
         if search is None:
             await ctx.send("You need to include the song that you want to queue `!queue song`")
             return

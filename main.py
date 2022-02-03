@@ -50,7 +50,7 @@ status = cycle(["8ball", "Jamming to youtube", "deciding life choices"])  # diff
 
 
 # setting prefix and making commands case insensitive
-bot = commands.Bot(command_prefix='~', case_insensitive=True)
+bot = commands.Bot(command_prefix='!', case_insensitive=True)
 
 
 # status changes
