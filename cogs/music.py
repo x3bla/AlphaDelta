@@ -197,7 +197,9 @@ class AutoPlay:
                     await asyncio.sleep(2)
                     pass
                 await asyncio.sleep(2)
+                print("[info] attempting to remove", file_name)
                 os.remove(file_name)
+                print("[info] Successfully removed", file_name)
                 break
             except AttributeError:
                 while True:  # if the bot leaves after joining instantly, need delay to remove audio
@@ -407,7 +409,6 @@ class Music(commands.Cog):
         num = 0
 
         for song in serverQueue["song"]:
-            print(num)
             minutes = song[1] // 60  # song = ["title", duration]
             seconds = song[1] % 60
             PlaytimeList.append(song[1])
