@@ -126,5 +126,5 @@ class Misc1(commands.Cog):
         await ctx.send(random.choice(mindBreak))
 
 
-def setup(bot):
-    bot.add_cog(Misc1(bot))
+async def setup(bot):
+    await bot.add_cog(Misc1(bot))

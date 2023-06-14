@@ -11,7 +11,8 @@ headpatCache = 0
 operator = []
 token = ""
 
-def unloadJSON():
+
+def unload_json():
     global operator
     global headpatCache
     global token
@@ -21,6 +22,7 @@ def unloadJSON():
         token = data["token"]
         operator = data["opID"]
 
+
 def operators(ctx):
     global operator
     if ctx.author.id in operator:
@@ -29,28 +31,33 @@ def operators(ctx):
         print(f"{ctx.author} attempted to perform a load action\n")
         return False
 
-def saveHeadpats():
+
+def save_headpats():
     with open("data.json", 'r') as f:
         data = json.load(f)
         data["headpats"] = headpatCache
 
     with open("data.json", 'w') as f:
-        json.dump(data, f, indent = 2)
+        json.dump(data, f, indent=2)
 
 
 # giving points
 def point():
     global headpatCache
     headpatCache += 1
-    saveHeadpats()
+    save_headpats()
+
+def load(name):
+    bot.load_extension(name)
 
 
 # cycling through statuses
 status = cycle(["8ball", "Jamming to youtube", "deciding life choices"])  # different statuses
 
-
 # setting prefix and making commands case insensitive
-bot = commands.Bot(command_prefix='!', case_insensitive=True)
+# setting up intents
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix='!', case_insensitive=True, intents=intents)
 
 
 # status changes
@@ -63,15 +70,22 @@ async def change_status():
 @bot.event
 async def on_ready():
     change_status.start()
+    for filename in os.listdir("./cogs"):
+        if filename.endswith(".py"):
+            await bot.load_extension(f"cogs.{filename[:-3]}")
+
     print("Bot is ready.")
+
 
 @bot.event
 async def on_member_join(member):
     print(f'{member} has joined a server.')
 
+
 @bot.event
 async def on_member_remove(member):
     print(f'{member} has left a server')
+
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -82,7 +96,8 @@ async def on_command_error(ctx, error):
         print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
         traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
-#commands
+
+# commands
 @bot.command()
 async def alpha(ctx):
     await ctx.send("Delta!")
@@ -94,7 +109,7 @@ async def ping(ctx):
 
 
 @bot.command(aliases=["headpat", "headpet", "pet"])
-async def goodBot(ctx):
+async def good_bot(ctx):
     username = ctx.author.mention
     await ctx.send(f"Thanks {username} ヽ(=^･ω･^=)丿")
     point()
@@ -105,29 +120,27 @@ async def goodBot(ctx):
 @bot.command()
 @commands.check(operators)
 async def load(ctx, extension):
-    bot.load_extension(f"cogs.{extension}")
+    await bot.load_extension(f"cogs.{extension}")
     print(f"{ctx.author} has performed an admin action\n")
+
 
 @bot.command()
 @commands.check(operators)
 async def unload(ctx, extension):
-    bot.unload_extension(f"cogs.{extension}")
+    await bot.unload_extension(f"cogs.{extension}")
     print(f"{ctx.author} has performed an admin action")
     print(f"{extension} has been unloaded\n")
+
 
 @bot.command()
 @commands.check(operators)
 async def reload(ctx, extension):
-    bot.unload_extension(f"cogs.{extension}")
-    bot.load_extension(f"cogs.{extension}")
+    await bot.unload_extension(f"cogs.{extension}")
+    await bot.load_extension(f"cogs.{extension}")
     print(f"{ctx.author} has performed an admin action")
     print(f"{extension} has been reloaded\n")
 
-for filename in os.listdir("./cogs"):
-    if filename.endswith(".py"):
-        bot.load_extension(f"cogs.{filename[:-3]}")
-
 
 # main loop/run
-unloadJSON()
+unload_json()
 bot.run(token)

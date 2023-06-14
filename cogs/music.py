@@ -31,7 +31,7 @@ ytdlp_format_options = {  # sets the quality of the audio
     # 'cookiefile': "./Cookies",
     # 'concurrent_fragment_downloads': 5,  # parallel downloading, if needed
     # 'max_filesize': 5000000,  # 5MB bytes | look at getVideoData
-    'quiet': True,
+    'quiet': False,
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
@@ -437,5 +437,5 @@ class Music(commands.Cog):
         await ctx.send(f"{queue}\nCurrently looping: {looping}")
 
 
-def setup(bot):
-    bot.add_cog(Music(bot))
+async def setup(bot):
+    await bot.add_cog(Music(bot))
