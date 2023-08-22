@@ -10,7 +10,7 @@ For the bot to work 100%, you need to FFmpeg and add the bin folder to path, yt-
 ## ffmpeg Installation Winows
 - [ffmpeg link (Windows build by BtbN)](https://ffmpeg.org/download.html#build-windows)
 
-- extract and rename to ffmpeg!
+- extract and rename to ffmpeg
 
 - Windows+S search for "System Environment"
 
@@ -66,7 +66,7 @@ and place the info into Data.json as such
 
 ## What does the JSON do
 
-The headpats are just a way to keep track of the amount of times people complpimented the bot with !goodbot (prefix by default is !, changeable"
+The headpats are just a way to keep track of the amount of times people complpimented the bot with !goodbot (prefix by default is !, changeable)
 
 opID is to let the bot know who's able to do admin commands from discord chat, such as !unload or !reload the cogs
 
