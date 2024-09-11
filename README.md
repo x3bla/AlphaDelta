@@ -33,7 +33,10 @@ type this in a administrator command line inside of your virtual environment
 
 `pip install -r requirements.txt`
 
-if you still have no idea what to do or it doesn't work, just go into requirements.txt and pip install the libraries yourself
+if you still have no idea what to do or if it doesn't work
+`pip install discord.py`
+`pip install -U discord.py[voice]`
+`pip install yt-dlp`
 
 ## Discord Bot Setup
 
