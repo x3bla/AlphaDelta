@@ -36,7 +36,6 @@ def save_headpats():
     with open("data.json", 'r') as f:
         data = json.load(f)
         data["headpats"] = headpatCache
-
     with open("data.json", 'w') as f:
         json.dump(data, f, indent=2)
 
@@ -54,7 +53,7 @@ def load(name):
 # cycling through statuses
 status = cycle(["8ball", "Jamming to youtube", "deciding life choices"])  # different statuses
 
-# setting prefix and making commands case insensitive
+# setting prefix and making commands case-insensitive
 # setting up intents
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', case_insensitive=True, intents=intents)
@@ -144,3 +143,4 @@ async def reload(ctx, extension):
 # main loop/run
 unload_json()
 bot.run(token)
+

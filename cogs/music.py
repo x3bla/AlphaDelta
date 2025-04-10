@@ -276,7 +276,7 @@ class Music(commands.Cog):
             return
 
         try:
-            data = await getVideoData(title)  # getting all of the data, song title, id, etc
+            data = await getVideoData(title)  # getting all the data, song title, id, etc
             if data is False:
                 await ctx.send("Please limit your video length to below **1 hour**")
                 return
