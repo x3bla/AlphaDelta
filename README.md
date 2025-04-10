@@ -73,4 +73,6 @@ The headpats are just a way to keep track of the amount of times people complpim
 
 opID is to let the bot know who's able to do admin commands from discord chat, such as !unload or !reload the cogs
 
-Token represents which bot is being run
+Token represents which bot is being ran
+
+log_channel is for keeping track of which channel in which guild (discord server) is being used for logging (if enabled)
