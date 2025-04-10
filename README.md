@@ -64,7 +64,7 @@ Copy your ID here
 
 ![2021-10-14 09_32_53-bot-command - Discord](https://user-images.githubusercontent.com/75881405/137235726-c942bb1b-f4bc-4a9a-9fbf-7cd5339978ce.png)
 
-and place the info into Data.json as such
+and place the info into Data.json as such <br/>
 ![2021-10-14 09_35_56-data json - Notepad](https://user-images.githubusercontent.com/75881405/137235779-181e69ea-b10c-4afc-92a8-44de22103b5a.png)
 
 ## What does the JSON do
