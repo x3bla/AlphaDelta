@@ -126,6 +126,8 @@ class Admin(commands.Cog):
             log_channel.pop(str(message.guild.id))
             saveJSON()
             return
+        if message.channel.id != log_channel[str(message.guild.id)]:
+            return
         if message.author.bot and (message.author.id != self.bot.user.id):
             await message.delete()
             await message.channel.send(f"{message.author.mention} Get the fuck out you stupid bots", delete_after=3)

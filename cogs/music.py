@@ -7,18 +7,18 @@ import asyncio
 import os
 
 """
-Why did you come back to this absolute mess of a code. 
-Basically, you tried to use classes and objects to get and store data as they are queued
-as in throw objects with a lot of attributes and dicts into a list
-yea, can't do that, data.title brings up an attribute error. So, a lot of classes are useless and removed
-but a lot has been built upon them already, and I can't be bothered to overhaul it.
+New overhaul plan. this music.py will be middle man handling the playing audio on discord
+and reading the commands from slash commands (maybe) or `!p`
+it will handle the song requests, send whatever to the relevant backend (youtube, spotify, soundcloud)
+and receive the Opus audio or some audio shit, and stream it to the client. internet should be fast enough
+or I'll have to download which will cause some... complexity
 
 BUGS:
 when you play a song and instantly disconnect the bot, the audio file is downloaded but not removed.
 and the file remains open until the bot is restarted
 """
 
-yt_dlp.utils.bug_reports_message = lambda: ''  # no idea what this does
+# yt_dlp.utils.bug_reports_message = lambda: ''  # no idea what this does
 
 # https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
 ytdlp_format_options = {  # sets the quality of the audio
