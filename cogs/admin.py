@@ -144,16 +144,16 @@ class Admin(commands.Cog):
             saveJSON()
             return
         if msg is None:
-            sec, mili_sec = str(datetime.datetime.now().timestamp()).split(".")
+            sec, milli_sec = str(datetime.datetime.now().timestamp()).split(".")
             await (self.bot.get_channel(log_channel[str(message.guild_id)])
-               .send(f"<t:{sec}:F>.{mili_sec}: A message has been **deleted** in {self.bot.get_channel(message.channel_id).mention}"))
+               .send(f"<t:{sec}:F>.{milli_sec}: A message has been **deleted** in {self.bot.get_channel(message.channel_id).mention}"))
             return
         if msg.author.bot:
             return
 
-        sec, mili_sec = str(msg.created_at.now().timestamp()).split(".")
+        sec, milli_sec = str(msg.created_at.now().timestamp()).split(".")
         await (self.bot.get_channel(log_channel[str(msg.guild.id)])
-               .send(f"<t:{sec}:F>.{mili_sec}: `{msg.author.display_name}`'s message has been **deleted**: "
+               .send(f"<t:{sec}:F>.{milli_sec}: `{msg.author.display_name}`'s message has been **deleted**: "
                      f"`{msg.content}` in {self.bot.get_channel(message.channel_id).mention}"))
 
     @commands.Cog.listener("on_raw_message_edit")
@@ -171,15 +171,15 @@ class Admin(commands.Cog):
             return
 
         if msg is None:  # if msg is not cached
-            sec, mili_sec = str(datetime.datetime.now().timestamp()).split(".")
+            sec, milli_sec = str(datetime.datetime.now().timestamp()).split(".")
             await (self.bot.get_channel(log_channel[str(message.guild_id)])
-                   .send(f"<t:{sec}:F>.{mili_sec}: `{message.message.author.display_name}` message has been **edited** to `{message.message.content}` "
+                   .send(f"<t:{sec}:F>.{milli_sec}: `{message.message.author.display_name}` message has been **edited** to `{message.message.content}` "
                          f"at {message.message.jump_url}"))
             return
 
-        sec, mili_sec = str(message.message.edited_at.timestamp()).split(".")
+        sec, milli_sec = str(message.message.edited_at.timestamp()).split(".")
         await (self.bot.get_channel(log_channel[str(msg.guild.id)])
-               .send(f"<t:{sec}:F>.{mili_sec}: `{msg.author.display_name}` has **edited** his message from "
+               .send(f"<t:{sec}:F>.{milli_sec}: `{msg.author.display_name}` has **edited** his message from "
                      f"`{msg.content}` to `{message.message.content}` at {message.message.jump_url}"))
 
     @commands.Cog.listener("on_voice_state_update")

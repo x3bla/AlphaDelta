@@ -7,7 +7,7 @@ die = ["Pls no, I can do so much more", "Why have you brought my life to an end"
 rps = ["rock", "stone", "paper", "cloth", "scissor", "scissors"]
 with open("MindBreak.txt", "r") as f:
     mindBreak = f.readlines()
-    print(mindBreak)
+    # print(mindBreak)
 
 # not safe
 # def mathBreakUp(expression):

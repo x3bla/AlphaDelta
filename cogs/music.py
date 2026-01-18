@@ -1,10 +1,11 @@
+import asyncio
+import os
 import random
 
 import discord
 from discord.ext import commands
-import yt_dlp
-import asyncio
-import os
+
+from .platform import youtube, spotify, soundcloud
 
 """
 New overhaul plan. this music.py will be middle man handling the playing audio on discord
@@ -18,197 +19,133 @@ when you play a song and instantly disconnect the bot, the audio file is downloa
 and the file remains open until the bot is restarted
 """
 
-# yt_dlp.utils.bug_reports_message = lambda: ''  # no idea what this does
 
-# https://github.com/ytdl-org/youtube-dl/blob/master/README.md#post-processing-options
-ytdlp_format_options = {  # sets the quality of the audio
-    'format': 'worstaudio',
-    'outtmpl': 'zz-%(id)s-%(title)s.%(ext)s',  # z to put it at the most bottom
-    'restrictfilenames': True,
-    'noplaylist': False,
-    'ignoreerrors': True,
-    'logtostderr': False,
-    # 'cookiefile': "./Cookies",
-    # 'concurrent_fragment_downloads': 5,  # parallel downloading, if needed
-    # 'max_filesize': 5000000,  # 5MB bytes | look at getVideoData
-    'quiet': False,
-    'no_warnings': True,
-    'default_search': 'auto',
-    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
-}  # spam of comments to see which is unneeded
+servers = {}
 
-ytdl = yt_dlp.YoutubeDL(ytdlp_format_options)  # loading youtube download options
-queue = {}
-looping = False
 
-def getServerQueue(server):  # too lazy to remove
-    return queue[server]
+class VideoData:
+    def __init__(self, title, url, duration, data, platform=0):
+        self.title = title
+        self.url = url
+        self.duration = duration
+        self.platform = platform  # 0: YouTube, 1: Spotify, 2: Soundcloud
+        self.data = data  # just in case
 
-def addVideo(server, song_title, duration):
-    queue[server]["song"].append([song_title, duration])
+    def __str__(self):
+        return [self.title, self.url, self.duration, self.platform]
 
-def createServerQueue(server):
-    queue[server] = {
-        "loop": False,
-        "auto_play_flag": False,
-        "song": [],
-    }
 
-def playTime(song_list):
-    TotalPlaytime = 0
+class ServerQueue:
+    def __init__(self, video_data: VideoData = None):
+        self._loop = False
+        self._queue = [video_data] if video_data is not None else []
+
+    def shuffle(self) -> list:
+        random.shuffle(self._queue)
+        return self._queue.copy()
+
+    def loop(self) -> bool:
+        self._loop = not self._loop
+        return self._loop
+
+    def add(self, data: VideoData) -> list:
+        self._queue.append(data)
+        return self._queue.copy()
+
+    def remove(self, item) -> list:
+        if isinstance(item, VideoData):
+            self._queue.remove(item)
+        elif isinstance(item, int):
+            self._queue.pop(item)
+        else:
+            print("alarmmmmm remove didn't work correctly")
+        return self._queue.copy()
+
+    def get_queue(self) -> list:
+        return self._queue.copy()  # just in case, to prevent mutation
+
+    def get_loop(self) -> bool:
+        return self._loop
+
+
+async def play_time(song_list: list):
+    total_playtime = 0
     for duration in song_list:
-        TotalPlaytime += duration
-    if TotalPlaytime > 3600:
-        hour = TotalPlaytime // 3600
-        minute = (TotalPlaytime - (hour * 3600)) // 60
-        second = (TotalPlaytime - (hour * 3600)) % 60
+        total_playtime += duration
+    if total_playtime > 3600:
+        hour = total_playtime // 3600
+        minute = (total_playtime - (hour * 3600)) // 60
+        second = (total_playtime - (hour * 3600)) % 60
         return hour, minute, second
     else:
-        minute = TotalPlaytime // 60
-        second = TotalPlaytime % 60
+        minute = total_playtime // 60
+        second = total_playtime % 60
         return None, minute, second
 
-async def removeVideo(server, videoItem: int):
-    del(queue[server]["song"][videoItem])
 
-async def getVideoData(searchString: str, download=False):  # throwing search in to get a ton of data
-    data = ytdl.extract_info(searchString, download=download)
-    entries = data.get('entries')
-    if entries is not None:
-        entry = entries[0] if len(entries) > 0 else None
-    else:
-        entry = data
-    if entry["duration"] > 3600:  # if audio is longer than 1 hour, say no
-        return False
-    else:
-        return entry
+async def start_playing(ctx):
+    server = ctx.message.guild
+    if len(servers[server.id].get_queue()) == 0:  # idk
+        print("how did I get here")
+        return
 
-class VideoData:  # get title and url from a huge dictionary
-    def __init__(self, extractedData):
-        self.title = extractedData['title']
-        self.url = extractedData['webpage_url']
-        self.duration = extractedData['duration']
-        if self.title is None or self.url is None:
-            raise RuntimeError('The extracted data specified does not have one of the following:'
-                               'title, webpage_url')
+    voice_channel = server.voice_client
+    server = servers[server.id]
+    server_queue = server.get_queue()
 
-
-class VideoQueueItem:  # download the video
-    def __init__(self, videoData: VideoData):
-        self.videoData = videoData
-
-    async def __download(self):
-        ytdl.download([self.videoData.url])  # they use a for loop, so the string breaks down into chars
-
-    async def download(self):
-        await self.__download()
-
-
-class AutoPlay:
-    """handles everything related to playing audio"""
-
-    @staticmethod
-    async def _play(ctx, data, file_name):
-        video = VideoData(data)  # Type 'VideoData' doesn't have expected attribute '__getitem__'
-        current_song = video.title  # need to turn it to object here
-        # screw my life, it'll be better if I rewrote this whole thing since I can't use classes like I thought
-
-        voice_channel = ctx.message.guild.voice_client  # the voice channel of the user who sent the command
-
-        try:  # try to stop current song to play new song
-            voice_channel.stop()
-        except discord.ClientException:
-            pass
-
+    while len(server_queue) != 0:
         async with ctx.typing():
-            video = VideoQueueItem(video)
-            await video.download()
+            _, minutes, seconds = await play_time([server_queue[0].duration])
+            data = server_queue[0].data
+            url = server_queue[0].url
+            current_song = server_queue[0].title
+            file_name = await youtube.get_file(url)  # download
 
-            voice_channel.play(discord.FFmpegOpusAudio(file_name))  # play song
+            source = discord.FFmpegPCMAudio(file_name)
+            source = discord.PCMVolumeTransformer(source, volume=0.5)
+            voice_channel.play(source)  # play song
 
-            await ctx.send(f"**Now playing: ** {current_song}")
+            # embed
+            embed = discord.Embed(title="Now Playing:",
+                                  description=f"[{current_song}]({url})",
+                                  color=0x871478)
+            embed.set_thumbnail(url=data["thumbnail"])
+            embed.add_field(name="Video Duration", value=str(minutes) + "m " + str(seconds) + "s", inline=False)
+            await ctx.send(embed=embed)
 
-    async def play_next(self, ctx, song_data):
-        """check if song is still playing, if not, _play next and delete file. Try catch for when bot disconnects"""
-        global looping
+        await delete_audio_file(ctx, file_name)
 
-        server = ctx.message.guild.id
-        serverQueue = getServerQueue(server)  # getting server
-        flag = serverQueue["auto_play_flag"]
+        if server.get_loop():
+            server.add(server_queue[0])
 
-        file_name = ytdl.prepare_filename(song_data)
-        await self._play(ctx, song_data, file_name)  # BUG: if bot leaves before playing, audio file is stuck open
-        await self.delete_audio_file(ctx, file_name)
+        try:
+            server.remove(server_queue[0])
+        except ValueError:
+            pass  # no idea why they deleted the current song but oh wells
 
-        discordBot = ctx.message.guild.voice_client
-        autoplay = True
-        while autoplay:
-            looping = True  # temp variable
+        server_queue = server.get_queue()  # refresh queue
 
-            if flag:
-                pass
-            else:
-                autoplay = False
 
-            try:  # when bot leaves while playing, pass the error
-                while discordBot.is_playing() or discordBot.is_paused():
-                    await asyncio.sleep(2)
-                    pass
-            except AttributeError:
-                print("passing")
-                pass
-
-            print("triggering autoplay")
-            current_song = song_data["title"]
-            if serverQueue["loop"]:
-                duration = song_data["duration"]
-                addVideo(server, current_song, duration)  # adding back into the queue if loop is True
-
-            try:  # if not in queue, pass
-                song_index = serverQueue["song"].index([song_data["title"], song_data["duration"]])
-                del(serverQueue["song"][song_index])  # song's played, so, YEET
-            except ValueError:
-                pass
-
-            if not serverQueue["song"]:  # when the queue is empty, break
-                serverQueue["auto_play_flag"] = False
-                looping = False  # this variable is temp
-                break
-
-            try:
-                ctx.message.guild.voice_client.is_playing()
-            except AttributeError:
-                break
-
-            song_data = await getVideoData(serverQueue["song"][0][0])
-            file_name = ytdl.prepare_filename(song_data)
-            await self._play(ctx, song_data, file_name)  # _play next song on list
-            await self.delete_audio_file(ctx, file_name)
-
-            print("deleted", file_name)
-            looping = False
-
-    @staticmethod
-    async def delete_audio_file(ctx, file_name):
-        """deletes song at the end of the song"""
-        while True:
-            try:
-                while ctx.message.guild.voice_client.is_playing():
-                    await asyncio.sleep(2)
-                    pass
+async def delete_audio_file(ctx, file_name):
+    """deletes song at the end of the song"""
+    while True:
+        try:
+            while ctx.message.guild.voice_client.is_playing():
                 await asyncio.sleep(2)
-                print("[info] attempting to remove", file_name)
-                os.remove(file_name)
-                print("[info] Successfully removed", file_name)
-                break
-            except AttributeError:
-                while True:  # if the bot leaves after joining instantly, need delay to remove audio
-                    try:
-                        os.remove(file_name)
-                        break
-                    except PermissionError:
-                        await asyncio.sleep(60)
-                break
+                pass
+            await asyncio.sleep(2)
+            print("[info] attempting to remove", file_name)
+            os.remove(file_name)
+            print("[info] Successfully removed", file_name)
+            break
+        except AttributeError:
+            while True:  # if the bot leaves after joining instantly, need delay to remove audio
+                try:
+                    os.remove(file_name)
+                    break
+                except PermissionError:
+                    await asyncio.sleep(60)
+            break
 
 class Music(commands.Cog):
 
@@ -221,32 +158,31 @@ class Music(commands.Cog):
 
     # commands starts here
     @commands.command(name="loop")
-    async def loop_(self, ctx):
-        try:
-            server = ctx.message.guild.id
-            serverQueue = getServerQueue(server)
+    async def toggle_loop(self, ctx):
+        server_id = ctx.message.guild.id
+        if server_id not in servers:
+            servers[server_id] = ServerQueue()
 
-            if serverQueue["loop"]:  # index 0 for loop boolean
-                await ctx.send("Loop mode is now disabled")
-                serverQueue["loop"] = False
+        queue = servers.get(server_id)
+        loop = queue.loop()
+        if loop:
+            await ctx.send("Loop mode is now **enabled**")
+        else:
+            await ctx.send("Loop mode is now **disabled**")
 
-            else:
-                await ctx.send("Loop mode is now enabled")
-                serverQueue["loop"] = True
-        except KeyError:
-            await ctx.send("You do not have a queue in the server")
 
     @commands.command(aliases=['p'])
-    async def play(self, ctx, *, title=None):
-        if not ctx.message.author.voice:  # check if arguments are valid
+    async def play(self, ctx, *, search_string=None):
+        # check if arguments are valid
+        if not ctx.message.author.voice:
             await ctx.send("You are not connected to a voice channel")
             return
 
-        elif title is None:
+        elif search_string is None:
             await ctx.send("You need to type in a song or a url with `!play song`")
             return
 
-        elif "playlist?" in title:
+        elif "playlist?" in search_string:
             await ctx.send("For playlists, use the `!queue` command instead (not implemented ping my creator)")
             return
 
@@ -257,33 +193,50 @@ class Music(commands.Cog):
             except discord.ClientException:
                 pass
 
-        if "http" not in title:
-            if ":" in title:
-                title = title.replace(":", "")
+        if "http" not in search_string:
+            if ":" in search_string:
+                search_string = search_string.replace(":", "")
 
-        server = ctx.message.guild.id
-        if server not in queue:  # i need this cuz dict KeyError. Might have to change the way auto play works
-            createServerQueue(server)
-        serverQueue = getServerQueue(server)
+        # create server queue
+        server_id = ctx.message.guild.id
+        if server_id not in servers:
+            servers[server_id] = ServerQueue()
+        server = servers[server_id]
 
-        if serverQueue["song"]:  # if queue exists, enable auto play
-            serverQueue["auto_play_flag"] = True
 
-        if title.lower() == "queue" or title.lower() == "q":
-            song_title = serverQueue["song"][0][0]  # changes song data from search title to first item in queue
-            song_data = await getVideoData(song_title)
-            await AutoPlay().play_next(ctx, song_data)
+        # TODO: playlist
+        # if 'entries' in data:
+        #     # take first item from a playlist
+        #     data = data['entries'][0]
+
+        data = await youtube.get_info(search_string)  # getting all the data, song title, id, etc
+        if data is False:
+            await ctx.send("Please limit your video length to below **1 hour**")
+            return
+        elif data is None:  # possible reason: searching up channel name instead of song
+            await ctx.send("Can't find song, please reword")
             return
 
-        try:
-            data = await getVideoData(title)  # getting all the data, song title, id, etc
-            if data is False:
-                await ctx.send("Please limit your video length to below **1 hour**")
-                return
+        # youtube
+        title = data["title"]
+        url = data["original_url"]
+        duration = data["duration"]
+        if len(server.get_queue()) == 0:
+            server.add(VideoData(title, url, duration, data))
+            await start_playing(ctx)
 
-            await AutoPlay().play_next(ctx, data)
-        except KeyError:
-            pass  # if there's no queue, this will be triggered
+        else:
+            server.add(VideoData(title, url, duration, data))
+
+            queue_number = len(server.get_queue())
+            _, minutes, seconds = await play_time([duration])
+
+            # embed
+            embed = discord.Embed(title=title, url=url, color=0x871478)
+            embed.set_thumbnail(url=data["thumbnail"])
+            embed.add_field(name="Queue no.", value=str(queue_number), inline=True)
+            embed.add_field(name="Video Duration", value=str(minutes) + "m " + str(seconds) + "s", inline=True)
+            await ctx.send(embed=embed)
 
     @commands.command(aliases=["stop"])
     async def pause(self, ctx):
@@ -301,8 +254,13 @@ class Music(commands.Cog):
 
     @commands.command(aliases=['s'])
     async def skip(self, ctx):
+        server = servers.get(ctx.message.guild.id)
+        if not server:
+            await ctx.send("there's no song in the queue to play")
+            return
+
         voice_channel = ctx.message.guild.voice_client
-        serverQueue = getServerQueue(ctx.message.guild.id)
+        server_queue = server.get_queue()
 
         try:
             voice_channel.stop()
@@ -310,119 +268,92 @@ class Music(commands.Cog):
         except discord.VoiceClient:
             await ctx.send("There is no song to skip")
 
-        if serverQueue["song"]:  # if there's another song to play, play
-            serverQueue["auto_play_flag"] = True  # TODO: check if this is needed
-        else:
+        if len(server_queue) == 0:
             await ctx.send("there's no song in the queue to play")
 
     @commands.command(aliases=["sh"])
     async def shuffle(self, ctx):
-        server = ctx.message.guild.id
-        if server not in queue:
-            await ctx.send("You don't have a queue")
+        server = servers.get(ctx.message.guild.id)
+        if not server:
+            await ctx.send("there's no song in the queue to shuffle")
             return
 
-        serverQueue = getServerQueue(server)
-        random.shuffle(serverQueue["song"])
+        if len(server.get_queue()) == 0:
+            await ctx.send("there's no song in the queue to shuffle")
+            return
+
+        server.shuffle()
         await ctx.send("**Shuffled** :twisted_rightwards_arrows:")
 
-    @commands.command(name="queue", aliases=['q'])
-    async def queue_(self, ctx, *, search=None):  # TODO: merge with play, make queue display the queue
-        if search is None:
-            await ctx.send("You need to include the song that you want to queue `!queue song`")
-            return
-        # TODO: allow playlists
-        video_data = await getVideoData(search)
-        if video_data is False:
-            await ctx.send("Please limit your video length to below **1 hour**")
-            return
-
-        song_data = VideoData(video_data)
-        server = ctx.message.guild.id
-        song_title = song_data.title
-
-        if server not in queue:  # if the key "server's name" does not exist, create it.
-            createServerQueue(server)
-
-        serverQueue = getServerQueue(server)
-        print(song_data, ctx.message.author)
-        serverQueue["song"].append([song_title, song_data.duration])
-        print(queue, "\n")
-
-        minutes = song_data.duration // 60
-        seconds = song_data.duration % 60
-
-        queue_number = len(serverQueue["song"])
-
-        embed = discord.Embed(title=song_title, url=song_data.url, color=0x871478)
-        embed.set_thumbnail(url=video_data["thumbnail"])
-        embed.add_field(name="Queue no.", value=str(queue_number), inline=True)
-        embed.add_field(name="Video Duration", value=str(minutes)+"m "+str(seconds)+"s", inline=True)
-        await ctx.send(embed=embed)
-
     @commands.command(aliases=['r'])
-    async def remove(self, ctx, songIndex):
-        server = ctx.message.guild.id
-        songIndex = int(songIndex) - 1  # -1 cuz index starts at 0
+    async def remove(self, ctx, song_index):
+        server_id = ctx.message.guild.id
+        song_index = int(song_index) - 1  # -1 cuz index starts at 0
+        server = servers.get(server_id)
+        server_queue = server.get_queue()
 
-        try:
-            await removeVideo(server, songIndex)
-        except KeyError:
-            await ctx.send(f"{ctx.author.mention} Your queue is empty or you gave a invalid number")
+        if not server or len(server_queue) == 0:
+            await ctx.send(f"{ctx.author.mention} Your queue is empty")
+            return
+        elif song_index < 0:
+            await ctx.send(f"{ctx.author.mention} https://tenor.com/view/vir-das-wtf-bro-wtf-wtf-bro-bro-wtf-gif-24602109")
+            return
+        elif len(server_queue) < song_index+1:
+            await ctx.send(f"{ctx.author.mention} Your number exceeds the queue")
+            return
 
-        serverQueue = getServerQueue(server)  # retrieving queue from class
-        vidQueue = ''
-        PlaytimeList = []
+        title = server.get_queue()[song_index].title
+        server.remove(song_index)
+
+        server_queue = server.get_queue()  # get new list
+        vid_queue = ''
+        playtime_list = []
         num = 0
 
-        for song in serverQueue["song"]:
-            minutes = song[1] // 60  # song = ["title", duration]
-            seconds = song[1] % 60
+        for song in server_queue:
+            minutes = song.duration // 60
+            seconds = song.duration % 60
             num += 1  # 1. title 2:10
-            PlaytimeList.append(song[1])
-            vidQueue = vidQueue + str(num) + ". " + song[0] + " " + str(minutes) + ":" + str(seconds) + "\n"
-        if num == 0:
-            await ctx.send("your queue is empty")
+            playtime_list.append(song.duration)
+            vid_queue = vid_queue + str(num) + ". " + song.title + " " + str(minutes) + ":" + str(seconds) + "\n"
+
+        hour, minute, second = await play_time(playtime_list)
+        if hour is None:
+            total_play_time = str(minute) + "m " + str(second) + "s"
         else:
-            hour, minute, second = playTime(PlaytimeList)
-            if hour is None:
-                totalPlayTime = str(minute) + "m " + str(second) + "s"
-            else:
-                totalPlayTime = str(hour) + "h " + str(minute) + "m " + str(second) + "s"
-            await ctx.send(f"Removed! your queue is now:\n"
-                           f"```{vidQueue}\nTotal play time: {totalPlayTime}```")
+            total_play_time = str(hour) + "h " + str(minute) + "m " + str(second) + "s"
+
+        await ctx.send(f"Removed `{title}`! your queue is now:\n"
+                       f"```{vid_queue}\nTotal play time: {total_play_time}```")
 
     @commands.command(aliases=['v', "list"])
     async def view(self, ctx):
-        try:
-            server = ctx.message.guild.id
-            if not getServerQueue(server):
-                await ctx.send("your queue is empty")
-                return
-        except KeyError:
+        server_id = ctx.message.guild.id
+        if not servers.get(server_id) or len(servers.get(server_id).get_queue()) == 0:
             await ctx.send("The queue is empty")
             return
 
-        serverQueue = getServerQueue(server)
-        PlaytimeList = []
-        vidQueue = ''
+
+        server_queue = servers.get(server_id).get_queue()
+        playtime_list = []
+        vid_queue = ''
         num = 0
 
-        for song in serverQueue["song"]:
-            minutes = song[1] // 60  # song = ["title", duration]
-            seconds = song[1] % 60
-            PlaytimeList.append(song[1])
+        for song in server_queue:
+            minutes = song.duration // 60
+            seconds = song.duration % 60
+            playtime_list.append(song.duration)
             num += 1  # 1. title 2:10
-            vidQueue = vidQueue+str(num)+". "+song[0]+" "+str(minutes)+":"+str(seconds)+"\n"
+            vid_queue = vid_queue+str(num)+". "+song.title+" "+str(minutes)+":"+str(seconds)+"\n"
         if num == 0:
             await ctx.send("your queue is empty")
         else:
-            hour, minute, second = playTime(PlaytimeList)
+            hour, minute, second = await play_time(playtime_list)
             if hour is None:
-                totalPlayTime = str(minute) + "m " + str(second) + "s"
+                total_play_time = str(minute) + "m " + str(second) + "s"
             else:
-                totalPlayTime = str(hour) + "h " + str(minute) + "m " + str(second) + "s"
-            await ctx.send(f"```{vidQueue}\nTotal play time: {totalPlayTime}```")
+                total_play_time = str(hour) + "h " + str(minute) + "m " + str(second) + "s"
+            await ctx.send(f"```{vid_queue}\nTotal play time: {total_play_time}```")
 
     @commands.command(aliases=['l'])
     async def leave(self, ctx):
@@ -435,7 +366,10 @@ class Music(commands.Cog):
 
     @commands.command(aliases=["var", "vars"])
     async def variables(self, ctx):
-        await ctx.send(f"{queue}\nCurrently looping: {looping}")
+        queue = []
+        for song in servers[ctx.message.guild.id].get_queue():
+            queue.append(song.title)
+        await ctx.send(f"loop: {servers[ctx.message.guild.id].get_loop()}\nqueue: {queue}")
 
 
 async def setup(bot):

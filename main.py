@@ -71,7 +71,8 @@ async def on_ready():
     change_status.start()
     for filename in os.listdir("./cogs"):
         if filename.endswith(".py"):
-            await bot.load_extension(f"cogs.{filename[:-3]}")
+            if "init" not in filename:
+                await bot.load_extension(f"cogs.{filename[:-3]}")
 
     print("Bot is ready.")
 
