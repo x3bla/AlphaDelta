@@ -61,6 +61,10 @@ class ServerQueue:
             print("alarmmmmm remove didn't work correctly")
         return self._queue.copy()
 
+    def insert(self, item, index):
+        self._queue.insert(index, item)
+        return self._queue.copy()
+
     def get_queue(self) -> list:
         return self._queue.copy()  # just in case, to prevent mutation
 
@@ -88,6 +92,10 @@ async def start_playing(ctx):
     if len(servers[server.id].get_queue()) == 0:  # idk
         print("how did I get here")
         return
+
+    if ctx.voice_client is not None:
+        if ctx.voice_client.is_playing():
+            return
 
     voice_channel = server.voice_client
     server = servers[server.id]
@@ -183,7 +191,7 @@ class Music(commands.Cog):
             return
 
         elif "playlist?" in search_string:
-            await ctx.send("For playlists, use the `!queue` command instead (not implemented ping my creator)")
+            await ctx.send("not implemented yet ping my creator")
             return
 
         else:
@@ -208,6 +216,10 @@ class Music(commands.Cog):
         # if 'entries' in data:
         #     # take first item from a playlist
         #     data = data['entries'][0]
+
+        if search_string.lower() == "q" or search_string.lower() == "queue":
+            await start_playing(ctx)
+            return
 
         data = await youtube.get_info(search_string)  # getting all the data, song title, id, etc
         if data is False:
@@ -237,6 +249,62 @@ class Music(commands.Cog):
             embed.add_field(name="Queue no.", value=str(queue_number), inline=True)
             embed.add_field(name="Video Duration", value=str(minutes) + "m " + str(seconds) + "s", inline=True)
             await ctx.send(embed=embed)
+
+    @commands.command(aliases=["pnow", "pn"])
+    async def play_now(self, ctx, *, search_string):
+        # check if arguments are valid
+        if not ctx.message.author.voice:
+            await ctx.send("You are not connected to a voice channel")
+            return
+
+        elif search_string is None:
+            await ctx.send("You need to type in a song or a url with `!play song`")
+            return
+
+        elif "playlist?" in search_string:
+            await ctx.send("Play now doesn't support playlists (*´﹃｀*)")
+            return
+
+        else:
+            channel = ctx.message.author.voice.channel
+            try:  # if bot is not in VC, join it
+                await channel.connect()
+            except discord.ClientException:
+                pass
+
+        if "http" not in search_string:
+            if ":" in search_string:
+                search_string = search_string.replace(":", "")
+
+        # create server queue
+        server_id = ctx.message.guild.id
+        if server_id not in servers:
+            servers[server_id] = ServerQueue()
+        server = servers[server_id]
+        voice_channel = ctx.message.guild.voice_client
+
+        data = await youtube.get_info(search_string)  # getting all the data, song title, id, etc
+        if data is False:
+            await ctx.send("Please limit your video length to below **1 hour**")
+            return
+        elif data is None:  # possible reason: searching up channel name instead of song
+            await ctx.send("Can't find song, please reword")
+            return
+
+        # youtube
+        title = data["title"]
+        url = data["original_url"]
+        duration = data["duration"]
+        server.insert(VideoData(title, url, duration, data), 0)
+
+        try:
+            voice_channel.stop()
+        except discord.VoiceClient:
+            pass
+
+        if len(server.get_queue()) == 1:
+            await start_playing(ctx)
+
 
     @commands.command(aliases=["stop"])
     async def pause(self, ctx):
@@ -344,6 +412,7 @@ class Music(commands.Cog):
             seconds = song.duration % 60
             playtime_list.append(song.duration)
             num += 1  # 1. title 2:10
+            # TODO: I just realized AYO WHY THE HELL IS THIS NOT A F STRING I SHOULD BE GOOD ENOUGH TO USE IT WTF IS THIS BS AND DO YOUR {:02d}
             vid_queue = vid_queue+str(num)+". "+song.title+" "+str(minutes)+":"+str(seconds)+"\n"
         if num == 0:
             await ctx.send("your queue is empty")
